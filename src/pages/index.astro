@@ -13,9 +13,16 @@ const cards = projects as Project[];
         const cover = project.cover ?? project.media.find((m) => m.image)?.image;
         return (
           <a class="card" href={`/projects/${project.slug}`}>
-            {cover && <img src={cover} alt={project.title} loading="lazy" />}
+            {cover && (
+              <img
+                src={cover}
+                alt={project.title}
+                loading="lazy"
+                transition:name={`cover-${project.slug}`}
+              />
+            )}
             <div class="card__caption">
-              <p class="card__title">{project.title}</p>
+              <p class="card__title" transition:name={`title-${project.slug}`}>{project.title}</p>
               <p class="card__desc">{project.description}</p>
             </div>
           </a>
@@ -23,47 +30,6 @@ const cards = projects as Project[];
       })
     }
   </main>
-
-  <Fragment slot="info">
-    <div class="info-content">
-      <!-- Greta: "remove the about [label]" — no heading here, straight into the copy. -->
-      <p>
-        With 15+ years across account and project management, strategy, and creative
-        direction, I've worked with global players (Wunderman, Microsoft, Zalando,
-        American Express, Guess, Nike, Adidas, Danone, and more) and been there from
-        day one with startups still figuring out their name.
-      </p>
-      <p>
-        I'm industry-agnostic: fashion, tech, education, art. If there's a vision,
-        I'll help you execute it. I care deeply about the people I work with and I'm
-        committed to helping them do their best work. And at the end of the day, I
-        deliver.
-      </p>
-
-      <section class="info-section">
-        <h3 class="nav-label">Ventures</h3>
-        <p>Co-founder <a href="https://mimosaagency.com/" target="_blank" rel="noopener noreferrer">@mimosaagency</a></p>
-        <p>Co-founder <a href="https://b23.space/" target="_blank" rel="noopener noreferrer">@b23_space</a></p>
-      </section>
-
-      <section class="info-section">
-        <h3 class="nav-label">Mentorship</h3>
-        <p>
-          Mentor at ABC Incuba, with support from the Senate Department for Culture
-          and Social Cohesion in Berlin.
-        </p>
-      </section>
-
-      <section class="info-section">
-        <h3 class="nav-label">Connect</h3>
-        <p>
-          Available for networking and commissions. Connect on
-          {" "}<a href="https://www.linkedin.com/in/gretaferreira/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-          {" "}or via <a href="mailto:hello@gretaferreira.com">email</a>.
-        </p>
-      </section>
-    </div>
-  </Fragment>
 </Layout>
 
 <style>
@@ -101,29 +67,5 @@ const cards = projects as Project[];
     color: var(--fg-muted);
     margin: 4px 0 0;
     text-wrap: balance;
-  }
-  .info-content {
-    /* Greta: didn't love the narrow centered column, wanted it to use more
-       of the screen — widened and left-set instead of a small centered block. */
-    max-width: 900px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    font-family: var(--font-sans);
-    color: var(--fg-muted);
-    font-size: 1.1rem;
-    line-height: 1.6;
-  }
-  .info-section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: 8px;
-  }
-  .info-section p {
-    margin: 0;
-  }
-  .info-section a {
-    text-decoration: underline;
   }
 </style>

@@ -1,8 +1,14 @@
 // Cloudflare Pages Function — gates the whole test deploy behind HTTP Basic
 // Auth so it isn't publicly indexed/stumbled on while it's a rough draft.
-// Hardcoded on purpose: this is a throwaway preview password, not a secret
-// worth a Cloudflare secret binding. Any username works, only the password
-// is checked.
+// This only works because the site has no Astro adapter/_worker.js: Pages
+// ignores functions/ entirely whenever a _worker.js is present in the
+// output, and Astro's Cloudflare adapter also auto-excludes prerendered
+// routes from its worker via _routes.json — either way defeats this file.
+// Plain static output + this Function is the simplest thing that actually
+// gates every route.
+//
+// Hardcoded on purpose: throwaway preview password, not a secret worth a
+// Cloudflare secret binding. Any username works, only the password checks.
 const PASSWORD = "mimosaforever";
 
 export async function onRequest({ request, next }) {

@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import Wordmark from "../components/Wordmark.astro";
 import OrbitButton from "../components/OrbitButton.astro";
+import { ClientRouter } from "astro:transitions";
 
 interface Props {
   title: string;
@@ -14,6 +15,7 @@ const { title } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    <ClientRouter />
     <script is:inline>
       // Set theme before paint to avoid a flash of the wrong scheme.
       const stored = localStorage.getItem("theme");
@@ -23,7 +25,7 @@ const { title } = Astro.props;
     </script>
   </head>
   <body>
-    <header class="site-header">
+    <header class="site-header" transition:persist>
       <div class="site-header__meta">
         <span class="nav-label">Senior Project Management &amp; Account Manager</span>
         <button class="nav-label" id="info-toggle" type="button" aria-expanded="false">Info</button>
@@ -35,13 +37,56 @@ const { title } = Astro.props;
 
     <slot />
 
-    <OrbitButton class="get-in-touch" href="mailto:info@gretaferreira.com" label="Get in touch" />
+    <OrbitButton
+      class="get-in-touch"
+      href="mailto:info@gretaferreira.com"
+      label="Get in touch"
+      transition:persist
+    />
 
-    <button class="theme-toggle" id="theme-toggle" type="button">Toggle theme</button>
+    <button class="theme-toggle" id="theme-toggle" type="button" transition:persist>Toggle theme</button>
 
-    <div id="info-panel" class="info-panel" hidden>
+    <!-- Site-wide, not page content — persists across transitions so it
+         reads the same from every page instead of only existing on "/". -->
+    <div id="info-panel" class="info-panel" hidden transition:persist>
       <button class="nav-label" id="info-close" type="button">Close</button>
-      <slot name="info" />
+      <div class="info-content">
+        <p>
+          With 15+ years across account and project management, strategy, and creative
+          direction, I've worked with global players (Wunderman, Microsoft, Zalando,
+          American Express, Guess, Nike, Adidas, Danone, and more) and been there from
+          day one with startups still figuring out their name.
+        </p>
+        <p>
+          I'm industry-agnostic: fashion, tech, education, art. If there's a vision,
+          I'll help you execute it. I care deeply about the people I work with and I'm
+          committed to helping them do their best work. And at the end of the day, I
+          deliver.
+        </p>
+
+        <section class="info-section">
+          <h3 class="nav-label">Ventures</h3>
+          <p>Co-founder <a href="https://mimosaagency.com/" target="_blank" rel="noopener noreferrer">@mimosaagency</a></p>
+          <p>Co-founder <a href="https://b23.space/" target="_blank" rel="noopener noreferrer">@b23_space</a></p>
+        </section>
+
+        <section class="info-section">
+          <h3 class="nav-label">Mentorship</h3>
+          <p>
+            Mentor at ABC Incuba, with support from the Senate Department for Culture
+            and Social Cohesion in Berlin.
+          </p>
+        </section>
+
+        <section class="info-section">
+          <h3 class="nav-label">Connect</h3>
+          <p>
+            Available for networking and commissions. Connect on
+            {" "}<a href="https://www.linkedin.com/in/gretaferreira/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+            {" "}or via <a href="mailto:hello@gretaferreira.com">email</a>.
+          </p>
+        </section>
+      </div>
     </div>
 
     <style>
@@ -61,8 +106,9 @@ const { title } = Astro.props;
         max-width: 900px;
         height: auto;
         /* Greta: the logo reads suffocated jammed against the header row —
-           give it real air rather than the 8px gap the row itself uses. */
-        margin-top: 48px;
+           48px still wasn't enough once the swash's overshoot is accounted
+           for, doubled it. */
+        margin-top: 96px;
       }
       /* :global — the class lands on a child component's own scoped markup,
          so an un-prefixed selector here would never match it. */
@@ -87,6 +133,28 @@ const { title } = Astro.props;
         z-index: 30;
         overflow-y: auto;
         padding: var(--edge);
+      }
+      .info-content {
+        max-width: 900px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        font-family: var(--font-sans);
+        color: var(--fg-muted);
+        font-size: 1.1rem;
+        line-height: 1.6;
+      }
+      .info-section {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .info-section p {
+        margin: 0;
+      }
+      .info-section a {
+        text-decoration: underline;
       }
     </style>
 
