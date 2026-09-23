@@ -5,28 +5,42 @@ platform constraints, real page transitions available (Astro/browser native rout
 
 ## Status
 
-First pass: homepage grid, project detail template, Info overlay, dark/light theme
-(toggle + `prefers-color-scheme`), 18 projects wired from real CMS content. Not yet
-built: the liquid-glass carousel (currently a plain grid), exact licensed fonts,
-Cloudflare/R2 deploy.
+First pass: homepage grid, project detail template (with Credits), Info overlay,
+dark/light theme (toggle + `prefers-color-scheme`), the exact wordmark and both
+licensed fonts, 18 projects wired straight from the live Framer CMS. Not yet built:
+the liquid-glass carousel (currently a plain grid), the other page templates
+(Framer has more than the homepage + project detail), Cloudflare/R2 deploy.
 
 ## Content
 
-`npm run sync-content` regenerates `src/content/projects.json` and `public/media/`
-from `../greta-media` (the same CSVs used to populate the live Framer CMS — see
-that repo's README for the pipeline). Re-run it whenever `greta-media` changes.
-`public/media/` is gitignored; it's a local dev cache, not the production asset host.
+The Framer CMS (Projects + Media collections) is the source of truth — it's
+edited directly by Greta/Danilo and is ahead of the `greta-media` CSV snapshot
+(missing recent title/credit edits, a project or two out of date).
 
-## Fonts
+`npm run sync-content` builds `src/content/projects.json` and downloads images
+into `public/media/` from `.framer-export/framer-{projects,media,clients}.json`.
+That export isn't auto-fetched (needs a live `framer agent` session) — regenerate
+it with the snippet at the top of `scripts/sync-content.mjs`, or ask Claude to
+re-run it. Video files aren't rehosted by Framer, so they're copied from the
+local `../greta-media` checkout instead (same source Framer's Video field links
+to). `public/media/` and `.framer-export/` are both gitignored — local dev
+artifacts, not the production asset host.
 
-Two licensed fonts are used site-wide and are **not included** in this repo:
+## Fonts & logo
 
-- `Ethic Serif Light` — headings/titles
-- `Neue Swiss Medium` — body/nav
+Two licensed fonts, used site-wide:
 
-Drop the `.woff2` files into `public/fonts/` as `EthicSerifLight.woff2` and
-`NeueSwissMedium.woff2` (see `src/styles/global.css`) and they take over from the
-system fallbacks automatically.
+- `Ethic Serif Light` (+ italic) — headings/titles
+- `Neue Swiss Medium` (+ italic) — body/nav
+
+The `.woff` files in `public/fonts/` are the exact ones the live Framer site
+serves from framerusercontent.com — confirmed byte-identical against Danilo's
+Drive font folder (Partners drive, "creative resources"), which also has woff2/
+otf/ttf variants if a smaller build or print use ever needs them.
+
+The wordmark (`src/components/Wordmark.astro`) is the exact SVG path extracted
+from Framer's inline `<symbol>` — not a font re-creation. `fill: var(--bg)` /
+`stroke: var(--fg)` reproduces the hollow/outline look in both themes.
 
 ## Dev
 
