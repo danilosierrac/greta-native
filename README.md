@@ -49,3 +49,31 @@ npm install
 npm run sync-content
 npm run dev
 ```
+
+## Deploying the test preview
+
+Everything is prepped for Cloudflare Pages (`wrangler.toml`, and a
+`functions/_middleware.js` gate — HTTP Basic Auth, any username, password
+`mimosaforever`, hardcoded since it's a throwaway preview password, not a
+secret worth a Cloudflare secret binding) but **not yet deployed** — this
+environment has no Cloudflare login and can't authenticate to your account.
+One-time setup, then it's a single command from here on:
+
+```
+npx wrangler login          # opens a browser, needs your Cloudflare account
+npm run deploy:test         # builds, strips videos, uploads to Pages
+```
+
+`deploy:test` builds, then deletes `.mp4` files from `dist/media/` before
+uploading — Cloudflare Pages rejects any file over 25MB, and 7 of the 58
+videos are 29–59MB (the rest of the media is small; without stripping,
+`dist/` is 893MB, with it, 88MB). Project pages still show each video's
+poster image via the `<video poster>` attribute, they just won't play in
+this particular test deploy. Real video hosting is a separate decision
+(R2/Cloudflare Stream) — deliberately not started here per standing orders
+about not duplicating the existing R2 media pipeline.
+
+The `@astrojs/cloudflare` adapter logs a warning about a `SESSION` KV
+binding on build — the site never uses `Astro.session`, so it shouldn't
+matter, but if Pages complains about it after a real deploy, that's the
+fix to look at first.

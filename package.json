@@ -8,7 +8,8 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "sync-content": "node scripts/sync-content.mjs"
+    "sync-content": "node scripts/sync-content.mjs",
+    "deploy:test": "npm run build && find dist/media -name '*.mp4' -delete && wrangler pages deploy dist --project-name=greta-native-test"
   },
   "dependencies": {
     "astro": "^5.1.1",
