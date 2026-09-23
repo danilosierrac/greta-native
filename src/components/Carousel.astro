@@ -22,8 +22,52 @@ const items = (projects as Project[])
 </script>
 
 <script>
+  import { gsap } from "gsap";
   import { createCarousel, DEFAULT_SETTINGS } from "../scripts/carousel-engine";
   import { navigate } from "astro:transitions/client";
+
+  // Shared view-transition name for whichever tile was actually tapped —
+  // matched by the hero <img> on the project page (see [slug].astro). Only
+  // one navigation is ever in flight, so a single fixed name is enough;
+  // it doesn't need to be per-slug.
+  const COVER_TRANSITION_NAME = "project-cover";
+
+  // The anchors are children of `host`, so a touch tap's pointerup bubbles
+  // up into the engine's own pointerup handler (onTap) as well as firing
+  // the anchor's native click — without this guard a single tap called
+  // goToProject twice on touch devices, double-navigating mid-transition.
+  let navigating = false;
+
+  function goToProject(rect: DOMRect | { left: number; top: number; width: number; height: number }, src: string, slug: string) {
+    if (navigating) return;
+    navigating = true;
+    // The tile "comes forward" — a ghost <img> takes over from the WebGL
+    // canvas at the tapped tile's exact rect, lifts slightly, then the
+    // real navigation starts. Because it carries the same
+    // view-transition-name as the project page's hero image, the browser
+    // morphs seamlessly from this ghost into that image — the canvas
+    // itself just fades away as part of the normal page transition.
+    const ghost = document.createElement("img");
+    ghost.src = src;
+    ghost.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;object-fit:cover;z-index:50;pointer-events:none;`;
+    (ghost.style as any).viewTransitionName = COVER_TRANSITION_NAME;
+    document.body.appendChild(ghost);
+
+    gsap.to(ghost, {
+      scale: 1.06,
+      boxShadow: "0 30px 60px -10px rgba(0,0,0,0.5)",
+      duration: 0.22,
+      ease: "power2.out",
+      onComplete: () => {
+        // navigate() only rejects if the swap itself fails (not on the
+        // cosmetic view-transition abort noise) — reset so a failed
+        // attempt doesn't leave every further tap silently ignored.
+        navigate(`/projects/${slug}`)?.catch?.(() => {
+          navigating = false;
+        });
+      },
+    });
+  }
 
   function mount() {
     const root = document.querySelector<HTMLDivElement>("[data-carousel]");
@@ -50,7 +94,7 @@ const items = (projects as Project[])
           return;
         }
         event.preventDefault();
-        navigate(a.href);
+        goToProject(a.getBoundingClientRect(), item.src, item.slug);
       });
       host.appendChild(a);
       return a;
@@ -117,7 +161,11 @@ const items = (projects as Project[])
       },
       onTap: (sourceIndex) => {
         if (engine?.consumedByDrag()) return;
-        navigate(`/projects/${items[sourceIndex].slug}`);
+        const item = items[sourceIndex];
+        const anchor = anchors[sourceIndex];
+        // The anchor is repositioned to match its panel every frame, so its
+        // current rect is the tapped tile's rect.
+        goToProject(anchor ? anchor.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 }, item.src, item.slug);
       },
     });
 

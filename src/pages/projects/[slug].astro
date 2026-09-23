@@ -18,51 +18,67 @@ export function getStaticPaths() {
 }
 
 const { project, prev, next } = Astro.props as { project: Project; prev: Project; next: Project };
+
+// The cover already "arrived" as the hero via the carousel's shared-element
+// morph (see Carousel.astro) — shown once, up top, full-bleed. The gallery
+// below is everything else, so the cover doesn't repeat immediately under
+// itself.
+const restOfMedia = project.media.filter((item) => item.image !== project.cover);
 ---
 
 <Layout title={`${project.title} — Greta Ferreira`}>
   <main class="project" transition:animate={pageReveal}>
-    <h1 class="heading-serif project__title" data-reveal>{project.title}</h1>
-    <p class="project__desc" data-reveal>{project.description}</p>
-
-    <div class="project__media">
-      {
-        project.media.map((item) => (
-          <div class="project__media-item" data-parallax-wrap>
-            {item.video ? (
-              <video src={item.video} poster={item.image ?? undefined} controls playsinline data-parallax />
-            ) : item.image ? (
-              <img src={item.image} alt={item.alt ?? project.title} loading="lazy" data-parallax />
-            ) : null}
-          </div>
-        ))
-      }
-    </div>
-
     {
-      project.credits && (
-        <details class="credits" data-credits>
-          <summary class="nav-label" data-credits-summary>
-            <span class="credits__arrow" data-credits-arrow>&#9656;</span> Credits
-          </summary>
-          <div class="credits__wrap" data-credits-wrap>
-            <div class="credits__body" set:html={project.credits} />
-          </div>
-        </details>
+      project.cover && (
+        <div class="project__hero">
+          <img src={project.cover} alt={project.title} transition:name="project-cover" />
+        </div>
       )
     }
 
-    <nav class="project-nav">
-      <a class="project-nav__link project-nav__link--prev" href={`/projects/${prev.slug}`}>
-        <span class="nav-label">&larr; Previous</span>
-        <span class="project-nav__title">{prev.title}</span>
-      </a>
-      <a class="nav-label back-home" href="/">Back home</a>
-      <a class="project-nav__link project-nav__link--next" href={`/projects/${next.slug}`}>
-        <span class="nav-label">Next &rarr;</span>
-        <span class="project-nav__title">{next.title}</span>
-      </a>
-    </nav>
+    <div class="project__content">
+      <h1 class="heading-serif project__title" data-reveal>{project.title}</h1>
+      <p class="project__desc" data-reveal>{project.description}</p>
+
+      <div class="project__media">
+        {
+          restOfMedia.map((item) => (
+            <div class="project__media-item" data-parallax-wrap>
+              {item.video ? (
+                <video src={item.video} poster={item.image ?? undefined} controls playsinline data-parallax />
+              ) : item.image ? (
+                <img src={item.image} alt={item.alt ?? project.title} loading="lazy" data-parallax />
+              ) : null}
+            </div>
+          ))
+        }
+      </div>
+
+      {
+        project.credits && (
+          <details class="credits" data-credits>
+            <summary class="nav-label" data-credits-summary>
+              <span class="credits__arrow" data-credits-arrow>&#9656;</span> Credits
+            </summary>
+            <div class="credits__wrap" data-credits-wrap>
+              <div class="credits__body" set:html={project.credits} />
+            </div>
+          </details>
+        )
+      }
+
+      <nav class="project-nav">
+        <a class="project-nav__link project-nav__link--prev" href={`/projects/${prev.slug}`}>
+          <span class="nav-label">&larr; Previous</span>
+          <span class="project-nav__title">{prev.title}</span>
+        </a>
+        <a class="nav-label back-home" href="/">Back home</a>
+        <a class="project-nav__link project-nav__link--next" href={`/projects/${next.slug}`}>
+          <span class="nav-label">Next &rarr;</span>
+          <span class="project-nav__title">{next.title}</span>
+        </a>
+      </nav>
+    </div>
   </main>
 </Layout>
 
@@ -146,7 +162,24 @@ const { project, prev, next } = Astro.props as { project: Project; prev: Project
 
 <style>
   .project {
-    padding: 0 var(--edge) 160px;
+    padding-bottom: 160px;
+  }
+  /* Full-bleed — the hero is where the tapped tile "arrives", so it reads
+     as a continuation of the tap rather than content squeezed into the
+     same narrow column as the text below it. */
+  .project__hero {
+    width: 100%;
+    height: clamp(320px, 70vh, 820px);
+    overflow: hidden;
+  }
+  .project__hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .project__content {
+    padding: 0 var(--edge);
     max-width: 900px;
     margin: 0 auto;
   }
@@ -154,6 +187,8 @@ const { project, prev, next } = Astro.props as { project: Project; prev: Project
     font-size: clamp(2rem, 6vw, 3rem);
     text-align: center;
     text-wrap: balance;
+    /* The title "arrives" just after the hero settles, not glued to it. */
+    margin-top: clamp(32px, 8vw, 56px);
   }
   .project__desc {
     text-align: center;
