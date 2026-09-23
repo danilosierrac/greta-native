@@ -30,7 +30,7 @@ const { title } = Astro.props;
         <span class="nav-label" data-reveal>Senior Project Management &amp; Account Manager</span>
         <button class="nav-label" id="info-toggle" type="button" aria-expanded="false">Info</button>
       </div>
-      <a href="/" aria-label="Greta Ferreira — home">
+      <a href="/" aria-label="Greta Ferreira — home" data-home-link>
         <Wordmark class="site-logo" />
       </a>
     </header>
@@ -184,6 +184,7 @@ const { title } = Astro.props;
       import { gsap } from "gsap";
       import { revealNow, initScrollReveals } from "../scripts/reveal";
       import { initCursor } from "../scripts/cursor";
+      import { initCloseLinks } from "../scripts/close-transition";
 
       function initThemeToggle() {
         const themeBtn = document.getElementById("theme-toggle");
@@ -239,6 +240,7 @@ const { title } = Astro.props;
         initThemeToggle();
         initInfoPanel();
         initCursor();
+        initCloseLinks();
         // Only elements outside the info panel reveal on load/navigation —
         // the panel's own [data-reveal] paragraphs replay on open instead
         // (see initInfoPanel), not now, while it's still hidden.

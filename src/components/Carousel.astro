@@ -31,6 +31,7 @@ const items = (projects as Project[])
   // one navigation is ever in flight, so a single fixed name is enough;
   // it doesn't need to be per-slug.
   const COVER_TRANSITION_NAME = "project-cover";
+  const CARD_RADIUS = 20;
 
   // The anchors are children of `host`, so a touch tap's pointerup bubbles
   // up into the engine's own pointerup handler (onTap) as well as firing
@@ -41,36 +42,68 @@ const items = (projects as Project[])
   function goToProject(rect: DOMRect | { left: number; top: number; width: number; height: number }, src: string, slug: string) {
     if (navigating) return;
     navigating = true;
-    // The tile "comes forward" — a ghost <img> takes over from the WebGL
-    // canvas at the tapped tile's exact rect, lifts slightly, then the
-    // real navigation starts. Because it carries the same
-    // view-transition-name as the project page's hero image, the browser
-    // morphs seamlessly from this ghost into that image — the canvas
-    // itself just fades away as part of the normal page transition.
+
+    const root = document.querySelector<HTMLDivElement>("[data-carousel]");
+    root?.classList.add("is-picking");
+
+    // The tapped tile itself is what "comes forward" — like picking a
+    // tarot card, not a banner replacing it. A ghost <img> grows in place
+    // from the tile's exact rect to a centred, contained card (same shape
+    // family as the tile, just bigger and nearer), while the rest of the
+    // carousel dims and blurs behind it. It carries the same
+    // view-transition-name as the project page's hero card, so the
+    // browser morphs seamlessly from this grown ghost into that hero.
+    const aspect = rect.width / rect.height;
+    const maxW = Math.min(window.innerWidth * 0.86, 640);
+    const maxH = window.innerHeight * 0.72;
+    let targetW = maxW;
+    let targetH = targetW / aspect;
+    if (targetH > maxH) {
+      targetH = maxH;
+      targetW = targetH * aspect;
+    }
+    const header = document.querySelector(".site-header")?.getBoundingClientRect();
+    const minTop = (header?.bottom ?? 0) + 24;
+    const targetLeft = (window.innerWidth - targetW) / 2;
+    const targetTop = Math.max(minTop, (window.innerHeight - targetH) / 2);
+
     const ghost = document.createElement("img");
     ghost.src = src;
-    ghost.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;object-fit:cover;z-index:50;pointer-events:none;`;
+    ghost.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;object-fit:cover;border-radius:0px;box-shadow:0 0 0 rgba(0,0,0,0);z-index:50;pointer-events:none;`;
     (ghost.style as any).viewTransitionName = COVER_TRANSITION_NAME;
     document.body.appendChild(ghost);
 
     gsap.to(ghost, {
-      scale: 1.06,
-      boxShadow: "0 30px 60px -10px rgba(0,0,0,0.5)",
-      duration: 0.22,
-      ease: "power2.out",
+      left: targetLeft,
+      top: targetTop,
+      width: targetW,
+      height: targetH,
+      borderRadius: CARD_RADIUS,
+      boxShadow: "0 40px 80px -20px rgba(0,0,0,0.6)",
+      duration: 0.5,
+      ease: "power3.inOut",
       onComplete: () => {
         // navigate() only rejects if the swap itself fails (not on the
         // cosmetic view-transition abort noise) — reset so a failed
         // attempt doesn't leave every further tap silently ignored.
         navigate(`/projects/${slug}`)?.catch?.(() => {
           navigating = false;
+          root?.classList.remove("is-picking");
         });
       },
     });
   }
 
   function mount() {
+    // This script's module only ever loads once — astro:page-load re-runs
+    // mount() on every arrival back at "/", but a plain top-level `let`
+    // survives across those calls. Without resetting it here, one
+    // successful tap would latch `navigating` true forever and every tap
+    // after a second visit to the homepage would silently do nothing.
+    navigating = false;
+
     const root = document.querySelector<HTMLDivElement>("[data-carousel]");
+    root?.classList.remove("is-picking");
     const host = root?.querySelector<HTMLDivElement>("[data-host]");
     const labelEl = root?.querySelector<HTMLDivElement>("[data-label]");
     const counterEl = root?.querySelector<HTMLDivElement>("[data-counter]");
@@ -199,6 +232,18 @@ const items = (projects as Project[])
     inset: 0;
     touch-action: pan-y;
     -webkit-tap-highlight-color: transparent;
+    transition: filter 0.5s ease, opacity 0.5s ease;
+  }
+  /* The rest of the deck recedes the moment one card is picked — it
+     "gets nearer" on its own during the normal entry, then dims back
+     as soon as a single tile is chosen to come forward instead. */
+  .is-picking .carousel__host {
+    filter: blur(10px) brightness(0.45);
+    opacity: 0.8;
+  }
+  .is-picking .carousel__caption,
+  .is-picking .carousel__counter {
+    opacity: 0 !important;
   }
   .carousel__caption,
   .carousel__counter {
