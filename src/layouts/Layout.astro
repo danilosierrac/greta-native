@@ -145,17 +145,19 @@ const { title, isProject = false } = Astro.props;
         inset: 0;
         z-index: 100;
         background: var(--bg);
-        align-items: center;
-        justify-content: center;
         pointer-events: none;
       }
       html[data-intro="pending"] .intro-overlay {
-        display: flex;
+        display: block;
       }
+      /* Positioned entirely by JS (see playIntro in the script below): it
+         starts centred at "hero" size, then is animated left/top/width/
+         height directly onto the real header logo's own measured rect, so
+         it ends exactly where that logo lives instead of just fading away
+         in place over it. */
       .intro-overlay__mark {
-        width: min(72vw, 640px);
+        position: fixed;
         opacity: 0;
-        transform: scale(0.86);
         will-change: transform, opacity;
       }
       /* :global — same child-scoped-markup gotcha as .site-logo below. */
@@ -290,9 +292,15 @@ const { title, isProject = false } = Astro.props;
       import { initCloseLinks } from "../scripts/close-transition";
       import { shouldPlayIntro, markIntroPlayed, waitForIntro } from "../scripts/intro";
 
+      // The Wordmark's own viewBox (see Wordmark.astro) — used to give the
+      // centred starting mark the correct proportions without waiting on
+      // the SVG to lay itself out first.
+      const WORDMARK_ASPECT = 213 / 1853;
+
       function playIntro() {
         const overlay = document.getElementById("intro-overlay");
         const mark = overlay?.querySelector<HTMLElement>(".intro-overlay__mark");
+        const realLogo = document.querySelector<HTMLElement>(".site-logo");
         if (!overlay) return;
 
         if (!shouldPlayIntro() || !mark) {
@@ -307,12 +315,50 @@ const { title, isProject = false } = Astro.props;
           document.dispatchEvent(new CustomEvent("greta:intro-done"));
         };
 
-        gsap
-          .timeline({ onComplete: done })
-          .to(mark, { opacity: 1, scale: 1, duration: 0.9, ease: "power3.out" })
-          .to({}, { duration: 0.45 })
-          .to(mark, { scale: 1.05, duration: 0.6, ease: "power2.inOut" }, ">")
-          .to(overlay, { opacity: 0, duration: 0.55, ease: "power2.inOut" }, "<");
+        // Centred and large first — an explicit box (not flex-centring, which
+        // can't be animated away from) so the later move can tween straight
+        // from this rect to the real logo's.
+        const startWidth = Math.min(window.innerWidth * 0.72, 640);
+        const startHeight = startWidth * WORDMARK_ASPECT;
+        gsap.set(mark, {
+          left: (window.innerWidth - startWidth) / 2,
+          top: (window.innerHeight - startHeight) / 2,
+          width: startWidth,
+          height: startHeight,
+          opacity: 0,
+          scale: 0.86,
+        });
+
+        const tl = gsap.timeline({ onComplete: done });
+        tl.to(mark, { opacity: 1, scale: 1, duration: 0.9, ease: "power3.out" });
+        tl.to({}, { duration: 0.4 });
+
+        if (realLogo) {
+          // Ends exactly on the real header logo's own measured rect — the
+          // intro hands off into it instead of just fading away over it.
+          const endRect = realLogo.getBoundingClientRect();
+          tl.to(
+            mark,
+            {
+              left: endRect.left,
+              top: endRect.top,
+              width: endRect.width,
+              height: endRect.height,
+              scale: 1,
+              duration: 0.75,
+              ease: "power2.inOut",
+            },
+            ">"
+          )
+            .to(overlay, { opacity: 0, duration: 0.6, ease: "power2.inOut" }, "<+=0.1")
+            .to(mark, { opacity: 0, duration: 0.25, ease: "power1.in" }, ">-0.2");
+        } else {
+          tl.to(mark, { scale: 1.05, duration: 0.6, ease: "power2.inOut" }, ">").to(
+            overlay,
+            { opacity: 0, duration: 0.55, ease: "power2.inOut" },
+            "<"
+          );
+        }
       }
 
       function initThemeToggle() {
