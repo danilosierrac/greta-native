@@ -6,8 +6,9 @@ import { ClientRouter } from "astro:transitions";
 
 interface Props {
   title: string;
+  isProject?: boolean;
 }
-const { title } = Astro.props;
+const { title, isProject = false } = Astro.props;
 ---
 
 <html lang="en">
@@ -22,9 +23,33 @@ const { title } = Astro.props;
       if (stored === "light" || stored === "dark") {
         document.documentElement.setAttribute("data-theme", stored);
       }
+
+      // Mirrors src/scripts/intro.ts's shouldPlayIntro() — duplicated here
+      // (rather than imported) because this has to run synchronously before
+      // first paint. #intro-overlay defaults to display:none in CSS; this
+      // is the only thing that ever makes it visible, so every page that
+      // isn't a genuine first-ever load of "/" paints with zero flash of it.
+      try {
+        const isHome = location.pathname === "/" || location.pathname === "";
+        const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (isHome && !reduced && !sessionStorage.getItem("greta-intro-played")) {
+          document.documentElement.setAttribute("data-intro", "pending");
+        }
+      } catch (e) {}
     </script>
   </head>
   <body>
+    <!-- Plays once per session, only when "/" was the very first page this
+         browser tab loaded (see src/scripts/intro.ts) — the same metallic
+         wordmark that anchors the header first appears here, large and
+         alone, like Jem's glass emblem materialising before anything else
+         on the page is allowed to reveal itself. -->
+    <div id="intro-overlay" class="intro-overlay" aria-hidden="true" transition:persist>
+      <div class="intro-overlay__mark">
+        <Wordmark class="intro-mark-svg" metallic="full" />
+      </div>
+    </div>
+
     <header class="site-header" transition:persist>
       <div class="site-header__meta">
         <span class="nav-label" data-reveal>Senior Project Management &amp; Account Manager</span>
@@ -34,6 +59,16 @@ const { title } = Astro.props;
         <Wordmark class="site-logo" />
       </a>
     </header>
+
+    {
+      isProject && (
+        <button class="lightbox-close" data-home-link type="button" aria-label="Close" transition:persist>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <path d="M5 5 L19 19 M19 5 L5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
+      )
+    }
 
     <slot />
 
@@ -92,6 +127,59 @@ const { title } = Astro.props;
     </div>
 
     <style>
+      /* Hidden by default so every page that isn't a genuine first-ever
+         load of "/" paints instantly, no flash — the pre-paint inline
+         script in <head> is the only thing that flips data-intro="pending"
+         on <html>, which is the only way this ever becomes visible. */
+      .intro-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: var(--bg);
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+      html[data-intro="pending"] .intro-overlay {
+        display: flex;
+      }
+      .intro-overlay__mark {
+        width: min(72vw, 640px);
+        opacity: 0;
+        transform: scale(0.86);
+        will-change: transform, opacity;
+      }
+      /* :global — same child-scoped-markup gotcha as .site-logo below. */
+      :global(.intro-mark-svg) {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      /* The one clear way out of a lightbox — always the same spot,
+         regardless of scroll position, matching the reference Danilo sent. */
+      .lightbox-close {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        z-index: 40;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 1px solid var(--fg-faint);
+        background: var(--bg);
+        color: var(--fg);
+        cursor: pointer;
+        transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+      }
+      .lightbox-close:hover {
+        color: var(--accent-hover);
+        border-color: var(--accent-hover);
+        transform: scale(1.06);
+      }
       .site-header {
         padding: var(--edge);
         display: flex;
@@ -185,6 +273,32 @@ const { title } = Astro.props;
       import { revealNow, initScrollReveals } from "../scripts/reveal";
       import { initCursor } from "../scripts/cursor";
       import { initCloseLinks } from "../scripts/close-transition";
+      import { shouldPlayIntro, markIntroPlayed, waitForIntro } from "../scripts/intro";
+
+      function playIntro() {
+        const overlay = document.getElementById("intro-overlay");
+        const mark = overlay?.querySelector<HTMLElement>(".intro-overlay__mark");
+        if (!overlay) return;
+
+        if (!shouldPlayIntro() || !mark) {
+          document.documentElement.removeAttribute("data-intro");
+          document.dispatchEvent(new CustomEvent("greta:intro-done"));
+          return;
+        }
+
+        const done = () => {
+          document.documentElement.removeAttribute("data-intro");
+          markIntroPlayed();
+          document.dispatchEvent(new CustomEvent("greta:intro-done"));
+        };
+
+        gsap
+          .timeline({ onComplete: done })
+          .to(mark, { opacity: 1, scale: 1, duration: 0.9, ease: "power3.out" })
+          .to({}, { duration: 0.45 })
+          .to(mark, { scale: 1.05, duration: 0.6, ease: "power2.inOut" }, ">")
+          .to(overlay, { opacity: 0, duration: 0.55, ease: "power2.inOut" }, "<");
+      }
 
       function initThemeToggle() {
         const themeBtn = document.getElementById("theme-toggle");
@@ -241,14 +355,21 @@ const { title } = Astro.props;
         initInfoPanel();
         initCursor();
         initCloseLinks();
-        // Only elements outside the info panel reveal on load/navigation —
-        // the panel's own [data-reveal] paragraphs replay on open instead
-        // (see initInfoPanel), not now, while it's still hidden.
-        document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => {
-          if (el.closest("#info-panel")) return;
-          revealNow(el);
+        playIntro();
+
+        // Nothing reveals underneath the opaque intro until it's done —
+        // on every page after the first (or with the intro skipped) this
+        // resolves immediately, so it's not a real delay in practice.
+        waitForIntro().then(() => {
+          // Only elements outside the info panel reveal on load/navigation —
+          // the panel's own [data-reveal] paragraphs replay on open instead
+          // (see initInfoPanel), not now, while it's still hidden.
+          document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => {
+            if (el.closest("#info-panel")) return;
+            revealNow(el);
+          });
+          initScrollReveals(document);
         });
-        initScrollReveals(document);
       }
 
       initPage();

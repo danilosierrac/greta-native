@@ -25,6 +25,7 @@ const items = (projects as Project[])
   import { gsap } from "gsap";
   import { createCarousel, DEFAULT_SETTINGS } from "../scripts/carousel-engine";
   import { navigate } from "astro:transitions/client";
+  import { waitForIntro } from "../scripts/intro";
 
   // Shared view-transition name for whichever tile was actually tapped —
   // matched by the hero <img> on the project page (see [slug].astro). Only
@@ -217,7 +218,12 @@ const items = (projects as Project[])
 
   // astro:page-load fires on the very first load too, not just after a
   // transition — calling mount() directly as well double-mounted the engine.
-  document.addEventListener("astro:page-load", mount);
+  // Mounting is held behind the intro (a no-op wait on every load after the
+  // first) so the WebGL entry doesn't burn its animation underneath the
+  // opaque overlay before there's anything to see.
+  document.addEventListener("astro:page-load", () => {
+    waitForIntro().then(mount);
+  });
 </script>
 
 <style>

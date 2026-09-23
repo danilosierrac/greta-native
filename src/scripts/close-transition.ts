@@ -26,11 +26,23 @@ export function initCloseLinks() {
       if (event.defaultPrevented || event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
-      const hero = document.querySelector<HTMLImageElement>(".project__hero img");
       const main = document.querySelector<HTMLElement>(".project");
-      if (!hero || !main) return; // no card to close (already home) — let it navigate normally
+      if (!main) return; // already home — nothing to close, let the link behave normally
       if (navigating) {
         event.preventDefault();
+        return;
+      }
+
+      const hero = document.querySelector<HTMLImageElement>(".project__hero img");
+      if (!hero) {
+        // No cover on this project, so no card to shrink — but the close
+        // button has no href of its own to fall back on, so it still has
+        // to actually leave rather than silently doing nothing.
+        event.preventDefault();
+        navigating = true;
+        navigate("/")?.catch?.(() => {
+          navigating = false;
+        });
         return;
       }
       navigating = true;

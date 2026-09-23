@@ -26,7 +26,7 @@ const { project, prev, next } = Astro.props as { project: Project; prev: Project
 const restOfMedia = project.media.filter((item) => item.image !== project.cover);
 ---
 
-<Layout title={`${project.title} — Greta Ferreira`}>
+<Layout title={`${project.title} — Greta Ferreira`} isProject>
   <main class="project" transition:animate={pageReveal}>
     {
       project.cover && (
@@ -72,7 +72,6 @@ const restOfMedia = project.media.filter((item) => item.image !== project.cover)
           <span class="nav-label">&larr; Previous</span>
           <span class="project-nav__title">{prev.title}</span>
         </a>
-        <a class="nav-label back-home" href="/" data-home-link>Back home</a>
         <a class="project-nav__link project-nav__link--next" href={`/projects/${next.slug}`}>
           <span class="nav-label">Next &rarr;</span>
           <span class="project-nav__title">{next.title}</span>
@@ -277,9 +276,5 @@ const restOfMedia = project.media.filter((item) => item.image !== project.cover)
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-  .back-home {
-    flex-shrink: 0;
-    padding-top: 2px;
   }
 </style>
