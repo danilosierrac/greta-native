@@ -1,7 +1,0 @@
-node_modules/
-dist/
-.astro/
-.wrangler/
-.DS_Store
-public/media/
-.framer-export/
