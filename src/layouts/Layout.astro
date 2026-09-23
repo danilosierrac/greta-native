@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import Wordmark from "../components/Wordmark.astro";
 
 interface Props {
   title: string;
@@ -27,7 +28,7 @@ const { title } = Astro.props;
         <button class="nav-label" id="info-toggle" type="button" aria-expanded="false">Info</button>
       </div>
       <a href="/" aria-label="Greta Ferreira — home">
-        <h1 class="wordmark" style="font-size: clamp(2.5rem, 8vw, 5.5rem);">Greta Ferreira</h1>
+        <Wordmark class="site-logo" />
       </a>
     </header>
 
@@ -56,6 +57,12 @@ const { title } = Astro.props;
         display: flex;
         justify-content: space-between;
         align-items: center;
+      }
+      .site-logo {
+        display: block;
+        width: 100%;
+        max-width: 900px;
+        height: auto;
       }
       .get-in-touch {
         position: fixed;

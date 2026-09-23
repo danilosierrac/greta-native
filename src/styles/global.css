@@ -1,18 +1,33 @@
 /*
-  Font files are licensed (Ethic Serif Light, Neue Swiss Medium) — not included here.
-  Drop the woff2 files into /public/fonts/ with these exact names and the @font-face
-  rules below pick them up automatically. Until then the sans/serif fallbacks render.
+  Licensed fonts, extracted from the live Framer site's own @font-face rules
+  (framerusercontent.com) — same files it serves to every visitor's browser.
 */
 @font-face {
   font-family: "Ethic Serif Light";
-  src: url("/fonts/EthicSerifLight.woff2") format("woff2");
+  src: url("/fonts/EthicSerifLight.woff") format("woff");
   font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ethic Serif Light";
+  src: url("/fonts/EthicSerifLightItalic.woff") format("woff");
+  font-weight: 300;
+  font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: "Neue Swiss Medium";
-  src: url("/fonts/NeueSwissMedium.woff2") format("woff2");
+  src: url("/fonts/NeueSwissMedium.woff") format("woff");
   font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Neue Swiss Medium";
+  src: url("/fonts/NeueSwissMediumItalic.woff") format("woff");
+  font-weight: 500;
+  font-style: italic;
   font-display: swap;
 }
 
@@ -74,14 +89,15 @@ a {
   text-decoration: none;
 }
 
-.wordmark {
+/* Solid display serif — project titles, the Info heading. The hollow/outline
+   treatment belongs only to the actual logo (see components/Wordmark.astro). */
+.heading-serif {
   font-family: var(--font-serif);
   font-weight: 300;
-  color: transparent;
-  -webkit-text-stroke: 1px var(--fg);
-  letter-spacing: -0.02em;
+  color: var(--fg);
+  letter-spacing: -0.03em;
   margin: 0;
-  line-height: 1;
+  line-height: 1.05;
 }
 
 .pill {

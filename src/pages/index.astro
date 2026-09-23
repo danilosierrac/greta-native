@@ -10,10 +10,10 @@ const cards = projects as Project[];
   <main class="grid">
     {
       cards.map((project) => {
-        const cover = project.media.find((m) => m.image) ?? project.media[0];
+        const cover = project.cover ?? project.media.find((m) => m.image)?.image;
         return (
           <a class="card" href={`/projects/${project.slug}`}>
-            {cover?.image && <img src={cover.image} alt={cover.alt ?? project.title} loading="lazy" />}
+            {cover && <img src={cover} alt={project.title} loading="lazy" />}
             <div class="card__caption">
               <p class="card__title">{project.title}</p>
               <p class="card__desc">{project.description}</p>
@@ -26,7 +26,7 @@ const cards = projects as Project[];
 
   <Fragment slot="info">
     <div class="info-content">
-      <h2 class="wordmark" style="font-size: 2.5rem;">About</h2>
+      <h2 class="heading-serif" style="font-size: 2.5rem;">About</h2>
       <p>
         With 15+ years across account and project management, strategy, and creative
         direction, I've worked with global players (Wunderman, Microsoft, Zalando,

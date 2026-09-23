@@ -16,7 +16,7 @@ const { project } = Astro.props as { project: Project };
 
 <Layout title={`${project.title} — Greta Ferreira`}>
   <main class="project">
-    <h1 class="wordmark project__title">{project.title}</h1>
+    <h1 class="heading-serif project__title">{project.title}</h1>
     <p class="project__desc">{project.description}</p>
 
     <div class="project__media">
@@ -30,6 +30,15 @@ const { project } = Astro.props as { project: Project };
         )
       }
     </div>
+
+    {
+      project.credits && (
+        <details class="credits">
+          <summary class="nav-label">Credits</summary>
+          <div class="credits__body" set:html={project.credits} />
+        </details>
+      )
+    }
 
     <a class="nav-label back-home" href="/">&larr; Back home</a>
   </main>
@@ -65,5 +74,20 @@ const { project } = Astro.props as { project: Project };
   .back-home {
     display: inline-block;
     margin-top: 48px;
+  }
+  .credits {
+    margin-top: 64px;
+  }
+  .credits__body {
+    margin-top: 16px;
+    color: var(--fg-muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  .credits__body :global(p) {
+    margin: 0 0 8px;
+  }
+  .credits__body :global(a) {
+    text-decoration: underline;
   }
 </style>
