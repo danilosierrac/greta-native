@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import Wordmark from "../components/Wordmark.astro";
+import OrbitButton from "../components/OrbitButton.astro";
 
 interface Props {
   title: string;
@@ -34,10 +35,7 @@ const { title } = Astro.props;
 
     <slot />
 
-    <a class="pill get-in-touch" href="mailto:info@gretaferreira.com">
-      <span>&#9670;</span>
-      <span>Get in touch</span>
-    </a>
+    <OrbitButton class="get-in-touch" href="mailto:info@gretaferreira.com" label="Get in touch" />
 
     <button class="theme-toggle" id="theme-toggle" type="button">Toggle theme</button>
 
@@ -64,7 +62,9 @@ const { title } = Astro.props;
         max-width: 900px;
         height: auto;
       }
-      .get-in-touch {
+      /* :global — the class lands on a child component's own scoped markup,
+         so an un-prefixed selector here would never match it. */
+      :global(.get-in-touch) {
         position: fixed;
         left: 50%;
         bottom: 32px;
