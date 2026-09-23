@@ -1,0 +1,123 @@
+/*
+  Font files are licensed (Ethic Serif Light, Neue Swiss Medium) — not included here.
+  Drop the woff2 files into /public/fonts/ with these exact names and the @font-face
+  rules below pick them up automatically. Until then the sans/serif fallbacks render.
+*/
+@font-face {
+  font-family: "Ethic Serif Light";
+  src: url("/fonts/EthicSerifLight.woff2") format("woff2");
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Neue Swiss Medium";
+  src: url("/fonts/NeueSwissMedium.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+
+:root {
+  --bg: #fafafa;
+  --fg: #0a0a0a;
+  --fg-muted: #666;
+  --fg-faint: #999;
+  --pill-bg: rgba(10, 10, 10, 0.9);
+  --pill-fg: #f6f8fc;
+
+  --font-serif: "Ethic Serif Light", "PT Serif", Georgia, serif;
+  --font-sans: "Neue Swiss Medium", "Helvetica Neue", Arial, sans-serif;
+  --font-ui: "Inter", "Helvetica Neue", Arial, sans-serif;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0a0a;
+    --fg: #fafafa;
+    --fg-muted: #999;
+    --fg-faint: #666;
+    --pill-bg: rgba(250, 250, 250, 0.92);
+    --pill-fg: #0a0a0a;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --fg: #fafafa;
+  --fg-muted: #999;
+  --fg-faint: #666;
+  --pill-bg: rgba(250, 250, 250, 0.92);
+  --pill-fg: #0a0a0a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.wordmark {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--fg);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: -0.025em;
+  color: var(--pill-fg);
+  background: var(--pill-bg);
+  border-radius: 999px;
+  padding: 0.75em 1.25em;
+  border: none;
+  cursor: pointer;
+}
+
+.nav-label {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 12.8px;
+  letter-spacing: -0.02em;
+  color: var(--fg-faint);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.theme-toggle {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--fg-faint);
+  background: transparent;
+  border: 1px solid var(--fg-faint);
+  border-radius: 999px;
+  padding: 0.4em 0.9em;
+  cursor: pointer;
+}

@@ -1,0 +1,88 @@
+---
+import Layout from "../layouts/Layout.astro";
+import projects from "../content/projects.json";
+
+type Project = (typeof projects)[number];
+const cards = projects as Project[];
+---
+
+<Layout title="Greta Ferreira — Senior Project & Account Manager, Berlin">
+  <main class="grid">
+    {
+      cards.map((project) => {
+        const cover = project.media.find((m) => m.image) ?? project.media[0];
+        return (
+          <a class="card" href={`/projects/${project.slug}`}>
+            {cover?.image && <img src={cover.image} alt={cover.alt ?? project.title} loading="lazy" />}
+            <div class="card__caption">
+              <p class="card__title">{project.title}</p>
+              <p class="card__desc">{project.description}</p>
+            </div>
+          </a>
+        );
+      })
+    }
+  </main>
+
+  <Fragment slot="info">
+    <div class="info-content">
+      <h2 class="wordmark" style="font-size: 2.5rem;">About</h2>
+      <p>
+        With 15+ years across account and project management, strategy, and creative
+        direction, I've worked with global players (Wunderman, Microsoft, Zalando,
+        American Express, Guess, Nike, Adidas, Danone, and more) and been there from
+        day one with startups still figuring out their name.
+      </p>
+      <p>
+        I'm industry-agnostic: fashion, tech, education, art. If there's a vision,
+        I'll help you execute it. I care deeply about the people I work with and I'm
+        committed to helping them do their best work. And at the end of the day, I
+        deliver.
+      </p>
+    </div>
+  </Fragment>
+</Layout>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    padding: 0 40px 160px;
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .card img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    background: var(--fg-faint);
+  }
+  .card__caption {
+    text-align: center;
+  }
+  .card__title {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    font-size: 1.5rem;
+    margin: 0;
+    color: var(--fg);
+  }
+  .card__desc {
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    color: var(--fg-muted);
+    margin: 4px 0 0;
+  }
+  .info-content {
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-family: var(--font-sans);
+    color: var(--fg-muted);
+  }
+</style>

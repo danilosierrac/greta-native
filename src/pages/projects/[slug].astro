@@ -1,0 +1,69 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import projects from "../../content/projects.json";
+
+type Project = (typeof projects)[number];
+
+export function getStaticPaths() {
+  return (projects as Project[]).map((project) => ({
+    params: { slug: project.slug },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props as { project: Project };
+---
+
+<Layout title={`${project.title} — Greta Ferreira`}>
+  <main class="project">
+    <h1 class="wordmark project__title">{project.title}</h1>
+    <p class="project__desc">{project.description}</p>
+
+    <div class="project__media">
+      {
+        project.media.map((item) =>
+          item.video ? (
+            <video src={item.video} poster={item.image ?? undefined} controls playsinline />
+          ) : item.image ? (
+            <img src={item.image} alt={item.alt ?? project.title} loading="lazy" />
+          ) : null
+        )
+      }
+    </div>
+
+    <a class="nav-label back-home" href="/">&larr; Back home</a>
+  </main>
+</Layout>
+
+<style>
+  .project {
+    padding: 0 40px 160px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .project__title {
+    font-size: clamp(2rem, 6vw, 3rem);
+    text-align: center;
+  }
+  .project__desc {
+    text-align: center;
+    color: var(--fg-muted);
+    font-size: 1.4rem;
+    max-width: 560px;
+    margin: 16px auto 48px;
+  }
+  .project__media {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .project__media img,
+  .project__media video {
+    width: 100%;
+    display: block;
+  }
+  .back-home {
+    display: inline-block;
+    margin-top: 48px;
+  }
+</style>
