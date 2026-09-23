@@ -35,6 +35,7 @@ const items = (projects as Project[])
   import { navigate } from "astro:transitions/client";
   import { waitForIntro } from "../scripts/intro";
   import { isHomePath } from "../scripts/paths";
+  import { registerCarousel, updateTileRects, centerCarouselOn, snapCarouselToTarget } from "../scripts/carousel-bridge";
 
   // Created once, ever, the first time the visitor actually reaches home —
   // never destroyed on navigation away. The whole point of persisting this
@@ -167,6 +168,7 @@ const items = (projects as Project[])
         updateCaption();
       },
       onRects: (rects) => {
+        updateTileRects(rects);
         rects.forEach((rect, index) => {
           const a = anchors[index];
           if (!a) return;
@@ -210,6 +212,7 @@ const items = (projects as Project[])
       },
     });
 
+    registerCarousel(items.map((i) => i.slug), engine);
     updateCaption();
     // Deliberately no astro:before-swap teardown: this component is
     // transition:persist in Layout.astro now, so it is never actually
@@ -231,6 +234,19 @@ const items = (projects as Project[])
       // now needed here instead, since mount() itself only ever runs once.
       navigating = false;
       document.querySelector("[data-carousel]")?.classList.remove("is-picking");
+      // While hidden, tick() never runs, so centerCarouselOn's own target
+      // never actually got a chance to glide scroll toward it — snap the
+      // instant this is visible again so it's already sitting there, not
+      // visibly sliding into place in front of whoever just revealed it.
+      snapCarouselToTarget();
+    } else {
+      // Keeps the (possibly hidden) carousel scrolled to whatever project
+      // is actually on screen — tapping an off-centre tile, or paging
+      // prev/next, doesn't otherwise move the strip at all, so closing
+      // later would land back on wherever it happened to be instead of
+      // the thing you were just looking at.
+      const slug = location.pathname.match(/\/projects\/([^/]+)\/?$/)?.[1];
+      if (slug) centerCarouselOn(slug);
     }
     return home;
   }

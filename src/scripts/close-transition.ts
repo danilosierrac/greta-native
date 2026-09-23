@@ -1,11 +1,12 @@
 // The reverse of Carousel.astro's goToProject: leaving a project page
 // closes like the lightbox it opened as, instead of just navigating away.
-// The hero card shrinks back down and the rest of the page fades — the
-// carousel's own entry animation on arrival (already built) reads as the
-// matching "open" on the way back in.
+// The hero card shrinks back down exactly into its own tile in the
+// carousel — which, now that the carousel is transition:persist, is simply
+// revealed already sitting there the instant "/" loads, not rebuilt.
 import { gsap } from "gsap";
 import { navigate } from "astro:transitions/client";
 import { getHomeHref } from "./paths";
+import { getTileRect } from "./carousel-bridge";
 
 // Guards against firing the close animation (and navigate()) twice from a
 // rapid double-click or a click on both the logo and "Back home" before the
@@ -62,22 +63,44 @@ export function initCloseLinks() {
       (hero.style as any).viewTransitionName = "none";
 
       gsap.to(main, { opacity: 0, duration: 0.25, ease: "power1.out" });
-      // Aimed down into roughly where the carousel deck sits, not just
-      // "away" — a directional hint of returning to it, short of the full
-      // pixel-exact landing (which would need the WebGL carousel's own
-      // per-tile rects, only known on the page this hasn't navigated to yet).
-      gsap.to(ghost, {
-        scale: 0.12,
-        y: window.innerHeight * 0.32,
-        opacity: 0,
-        duration: 0.45,
-        ease: "power2.in",
-        onComplete: () => {
-          navigate(getHomeHref())?.catch?.(() => {
-            navigating = false;
-          });
-        },
-      });
+
+      const slug = location.pathname.match(/\/projects\/([^/]+)\/?$/)?.[1];
+      const tileRect = slug ? getTileRect(slug) : null;
+      const go = () =>
+        navigate(getHomeHref())?.catch?.(() => {
+          navigating = false;
+        });
+
+      if (tileRect) {
+        // The exact reverse of goToProject's grow: shrinks straight back
+        // into this project's own tile — real coordinates from the
+        // (currently hidden, but still running) carousel, not a guess.
+        gsap.to(ghost, {
+          left: tileRect.left,
+          top: tileRect.top,
+          width: tileRect.width,
+          height: tileRect.height,
+          borderRadius: 0,
+          boxShadow: "0 0 0 rgba(0,0,0,0)",
+          duration: 0.5,
+          ease: "power3.inOut",
+          onComplete: go,
+        });
+      } else {
+        // No cached tile position — this tab never actually mounted the
+        // carousel (a direct link straight to this project), so there's
+        // nowhere real to aim. Falls back to a generic collapse toward
+        // roughly where the deck sits; it'll do its normal entry once "/"
+        // actually mounts it fresh.
+        gsap.to(ghost, {
+          scale: 0.12,
+          y: window.innerHeight * 0.32,
+          opacity: 0,
+          duration: 0.45,
+          ease: "power2.in",
+          onComplete: go,
+        });
+      }
     });
   });
 }

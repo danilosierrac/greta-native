@@ -858,6 +858,18 @@ export function createCarousel(host: HTMLDivElement, options: EngineOptions) {
     invalidate();
   }
 
+  // Jumps scroll straight to wherever target already is, with no glide.
+  // Used when this carousel is revealed again after being hidden (see
+  // Carousel.astro) — while hidden, tick() never runs (gated on visible),
+  // so a target set via centerOn() while browsing a project never actually
+  // got a chance to glide scroll toward it. Calling this the instant it's
+  // shown again means it reappears already sitting there, rather than
+  // visibly sliding into place in front of the person who just revealed it.
+  function snapToTarget() {
+    scroll = target;
+    invalidate();
+  }
+
   function playEntry() {
     if (!entryEnabled) {
       onEntryDone(true);
@@ -1038,6 +1050,16 @@ export function createCarousel(host: HTMLDivElement, options: EngineOptions) {
   }
 
   function resize() {
+    // The host collapses to 0×0 whenever it's display:none (see
+    // Carousel.astro — hidden behind a project page), which would
+    // otherwise process a bogus resize down to a 1×1 canvas AND, worse,
+    // recompute target from whatever scroll happened to be at that exact
+    // moment — silently overwriting a centerCarouselOn() call that had just
+    // set target to a completely different tile. Skip entirely while
+    // hidden; the real size is re-measured (and any genuine resize that
+    // happened while hidden is caught) the moment it's shown again.
+    if (host.clientWidth === 0 || host.clientHeight === 0) return;
+
     const nextW = Math.max(1, host.clientWidth);
     const nextH = Math.max(1, host.clientHeight);
 
@@ -1152,7 +1174,7 @@ export function createCarousel(host: HTMLDivElement, options: EngineOptions) {
     }
   }
 
-  return { destroy, consumedByDrag, centerOn, invalidate };
+  return { destroy, consumedByDrag, centerOn, snapToTarget, invalidate };
 }
 
 export const CAPTION_GAP_PX = CAPTION_GAP;

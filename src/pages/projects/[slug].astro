@@ -26,12 +26,35 @@ const { project, prev, next } = Astro.props as { project: Project; prev: Project
 const restOfMedia = project.media.filter((item) => item.image !== project.cover);
 ---
 
-<Layout title={`${project.title} — Greta Ferreira`} isProject>
+<Layout title={`${project.title} — Greta Ferreira`}>
   <main class="project" transition:animate={pageReveal}>
     {
       project.cover && (
         <div class="project__hero">
           <img src={project.cover} alt={project.title} transition:name="project-cover" />
+          <button class="icon-button project__hero-control project__close" data-home-link type="button" aria-label="Close">
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path d="M5 5 L19 19 M19 5 L5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </button>
+          <a
+            class="icon-button project__hero-control project__arrow project__arrow--prev project-jump"
+            href={`/projects/${prev.slug}`}
+            aria-label={`Previous: ${prev.title}`}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+          <a
+            class="icon-button project__hero-control project__arrow project__arrow--next project-jump"
+            href={`/projects/${next.slug}`}
+            aria-label={`Next: ${next.title}`}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="M9 5 L16 12 L9 19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
         </div>
       )
     }
@@ -68,11 +91,11 @@ const restOfMedia = project.media.filter((item) => item.image !== project.cover)
       }
 
       <nav class="project-nav">
-        <a class="project-nav__link project-nav__link--prev" href={`/projects/${prev.slug}`}>
+        <a class="project-nav__link project-nav__link--prev project-jump" href={`/projects/${prev.slug}`}>
           <span class="nav-label">&larr; Previous</span>
           <span class="project-nav__title">{prev.title}</span>
         </a>
-        <a class="project-nav__link project-nav__link--next" href={`/projects/${next.slug}`}>
+        <a class="project-nav__link project-nav__link--next project-jump" href={`/projects/${next.slug}`}>
           <span class="nav-label">Next &rarr;</span>
           <span class="project-nav__title">{next.title}</span>
         </a>
@@ -85,11 +108,13 @@ const restOfMedia = project.media.filter((item) => item.image !== project.cover)
   import { gsap } from "gsap";
   import { navigate } from "astro:transitions/client";
 
-  // Prev/next keep the hero's own shared-element morph (both sides carry
-  // transition:name="project-cover", handled natively) but everything else
-  // — title, description, gallery, credits, nav — gets a quick deliberate
-  // fade first instead of riding the page-level blur/scale crossfade meant
-  // for a full page change. It's a card swap, not a new destination.
+  // Prev/next (both the arrows on the hero card and the titled links below
+  // it — .project-jump covers both) keep the hero's own shared-element
+  // morph (both sides carry transition:name="project-cover", handled
+  // natively) but everything else — title, description, gallery, credits,
+  // nav — gets a quick deliberate fade first instead of riding the
+  // page-level blur/scale crossfade meant for a full page change. It's a
+  // card swap, not a new destination.
   let navNavigating = false;
 
   function initProjectNav() {
@@ -98,7 +123,7 @@ const restOfMedia = project.media.filter((item) => item.image !== project.cover)
     // and close-transition.ts do — otherwise one swap latches it forever.
     navNavigating = false;
 
-    document.querySelectorAll<HTMLAnchorElement>(".project-nav__link").forEach((link) => {
+    document.querySelectorAll<HTMLAnchorElement>(".project-jump").forEach((link) => {
       if (link.dataset.navBound) return;
       link.dataset.navBound = "true";
 
@@ -215,6 +240,7 @@ const restOfMedia = project.media.filter((item) => item.image !== project.cover)
      goToProject), so it keeps reading as "that card, closer" rather than
      turning into a different kind of object once you arrive. */
   .project__hero {
+    position: relative;
     max-width: 640px;
     max-height: 72vh;
     margin: 40px auto 0;
@@ -228,6 +254,41 @@ const restOfMedia = project.media.filter((item) => item.image !== project.cover)
     max-height: 72vh;
     object-fit: cover;
     display: block;
+  }
+  /* The card's own controls — like the reference, not the site's global
+     header. A dark, blurred backdrop keeps them legible over any photo,
+     since .icon-button's default transparent style assumes a plain
+     background, not a cover image behind it. */
+  .project__hero-control {
+    position: absolute;
+    z-index: 5;
+    background: rgba(10, 10, 10, 0.4);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
+  }
+  .project__hero-control:hover {
+    background: rgba(10, 10, 10, 0.55);
+    border-color: #fff;
+    color: #fff;
+  }
+  .project__close {
+    top: 16px;
+    right: 16px;
+  }
+  .project__arrow {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .project__arrow:hover {
+    transform: translateY(-50%) scale(1.08);
+  }
+  .project__arrow--prev {
+    left: 16px;
+  }
+  .project__arrow--next {
+    right: 16px;
   }
   .project__content {
     padding: 0 var(--edge);

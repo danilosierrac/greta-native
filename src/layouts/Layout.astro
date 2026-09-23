@@ -7,9 +7,8 @@ import { ClientRouter } from "astro:transitions";
 
 interface Props {
   title: string;
-  isProject?: boolean;
 }
-const { title, isProject = false } = Astro.props;
+const { title } = Astro.props;
 ---
 
 <html lang="en">
@@ -71,26 +70,11 @@ const { title, isProject = false } = Astro.props;
       </div>
     </div>
 
-    <!-- Not persisted: the close button's presence genuinely differs
-         between home and a project, and transition:persist would freeze
-         this whole block at whatever it looked like on first mount instead
-         of picking up that per-page difference. The tagline's own reveal
-         already replays on every navigation regardless (see initPage
-         below), so nothing here relied on persisting for its animation. -->
-    <header class="site-header">
+    <header class="site-header" transition:persist="site-header">
       <div class="site-header__meta">
         <span class="nav-label" data-reveal>Senior Project Management &amp; Account Manager</span>
         <div class="header-actions">
           <button class="nav-label" id="info-toggle" type="button" aria-expanded="false">Info</button>
-          {
-            isProject && (
-              <button class="icon-button" data-home-link type="button" aria-label="Close">
-                <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-                  <path d="M5 5 L19 19 M19 5 L5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                </svg>
-              </button>
-            )
-          }
         </div>
       </div>
       <!-- metallic="full" — matches the intro mark exactly (same prop),
@@ -213,35 +197,14 @@ const { title, isProject = false } = Astro.props;
         min-width: 0;
       }
       /* Info and (on a project) Close live in the same row, spaced by a
-         normal flex gap — they used to be able to overlap when Close was
-         its own independently fixed-position element instead of sharing
-         this layout with Info. */
+         normal flex gap. .icon-button itself (shared with the close/prev/
+         next controls on a project's hero card) lives in global.css now —
+         it's used outside this component's own scope. */
       .header-actions {
         display: flex;
         align-items: center;
         gap: 14px;
         flex-shrink: 0;
-      }
-      /* Shared shape language with Close so the header's utility controls
-         read as one family — Info stays text (established, clear on its
-         own) but matches Close's size, border and hover colour. */
-      .icon-button {
-        width: 26px;
-        height: 26px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        border: 1px solid var(--fg-faint);
-        background: transparent;
-        color: var(--fg);
-        cursor: pointer;
-        transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-      }
-      .icon-button:hover {
-        color: var(--accent-hover);
-        border-color: var(--accent-hover);
-        transform: scale(1.08);
       }
       /* :global — the class lands on a child component's own scoped markup
          (the <svg> is rendered inside Wordmark.astro, not here), so an
