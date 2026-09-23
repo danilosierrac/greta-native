@@ -40,7 +40,9 @@
      couldn't find that swatch's exact value, swap this for the real one. */
   --accent-hover: #a9a0c7;
 
-  --edge: 60px;
+  /* 60px was flat across every breakpoint — fine on desktop, but on a phone
+     it alone eats 120px out of a ~375px viewport before any content starts. */
+  --edge: clamp(20px, 6vw, 60px);
 
   --font-serif: "Ethic Serif Light", "PT Serif", Georgia, serif;
   --font-sans: "Neue Swiss Medium", "Helvetica Neue", Arial, sans-serif;
@@ -124,4 +126,71 @@ a {
   border-radius: 999px;
   padding: 0.4em 0.9em;
   cursor: pointer;
+}
+
+/* Line-reveal (src/scripts/reveal.ts): each rendered line clips inside the
+   outer span and the inner one rises up from below on a stagger. */
+.reveal-line {
+  display: block;
+  overflow: hidden;
+}
+.reveal-line-inner {
+  display: block;
+  will-change: transform, opacity;
+}
+
+/* The custom view transition (src/scripts/page-transition.ts) — a soft
+   depth cut rather than Astro's flat default crossfade: the outgoing page
+   sinks back and blurs slightly, the incoming one rises into place from a
+   touch larger and blurred, like it was already there and just came into
+   focus. */
+@keyframes page-reveal-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0px);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.97) translateY(-16px);
+    filter: blur(4px);
+  }
+}
+@keyframes page-reveal-in {
+  from {
+    opacity: 0;
+    transform: scale(1.025) translateY(28px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0px);
+  }
+}
+
+/* Custom cursor (src/scripts/cursor.ts) — mix-blend-mode:difference keeps
+   it visible over both the dark and light theme without tracking colors.
+   Only enabled on devices that report a real pointer (see the JS guard). */
+.has-custom-cursor,
+.has-custom-cursor a,
+.has-custom-cursor button {
+  cursor: none;
+}
+#cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  mix-blend-mode: difference;
+  pointer-events: none;
+  z-index: 999;
+  transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1), height 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#cursor-dot.is-hover {
+  width: 44px;
+  height: 44px;
 }

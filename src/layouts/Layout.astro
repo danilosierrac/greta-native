@@ -27,7 +27,7 @@ const { title } = Astro.props;
   <body>
     <header class="site-header" transition:persist>
       <div class="site-header__meta">
-        <span class="nav-label">Senior Project Management &amp; Account Manager</span>
+        <span class="nav-label" data-reveal>Senior Project Management &amp; Account Manager</span>
         <button class="nav-label" id="info-toggle" type="button" aria-expanded="false">Info</button>
       </div>
       <a href="/" aria-label="Greta Ferreira — home">
@@ -47,17 +47,19 @@ const { title } = Astro.props;
     <button class="theme-toggle" id="theme-toggle" type="button" transition:persist>Toggle theme</button>
 
     <!-- Site-wide, not page content — persists across transitions so it
-         reads the same from every page instead of only existing on "/". -->
-    <div id="info-panel" class="info-panel" hidden transition:persist>
+         reads the same from every page instead of only existing on "/".
+         Starts transparent/hidden and is animated open by script, not the
+         hidden attribute (which can't be transitioned). -->
+    <div id="info-panel" class="info-panel" transition:persist>
       <button class="nav-label" id="info-close" type="button">Close</button>
       <div class="info-content">
-        <p>
+        <p data-reveal>
           With 15+ years across account and project management, strategy, and creative
           direction, I've worked with global players (Wunderman, Microsoft, Zalando,
           American Express, Guess, Nike, Adidas, Danone, and more) and been there from
           day one with startups still figuring out their name.
         </p>
-        <p>
+        <p data-reveal>
           I'm industry-agnostic: fashion, tech, education, art. If there's a vision,
           I'll help you execute it. I care deeply about the people I work with and I'm
           committed to helping them do their best work. And at the end of the day, I
@@ -98,17 +100,33 @@ const { title } = Astro.props;
       .site-header__meta {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        /* flex-start, not center: the tagline wraps to 2 lines on a phone,
+           and centering against its full height dropped "Info" down between
+           the two lines instead of pinning it level with the first. */
+        align-items: flex-start;
+        gap: 16px;
       }
-      .site-logo {
+      .site-header__meta > :first-child {
+        /* Same reason: give the tagline room to wrap onto its own lines
+           without shoving Info around, but let it actually wrap instead of
+           overflowing past Info's column. */
+        flex: 1;
+        min-width: 0;
+      }
+      /* :global — the class lands on a child component's own scoped markup
+         (the <svg> is rendered inside Wordmark.astro, not here), so an
+         un-prefixed selector here silently never matches it. Cost real
+         time twice now: this exact bug, on this exact element, is why the
+         margin below kept reading as 0 no matter what number was in it. */
+      :global(.site-logo) {
         display: block;
         width: 100%;
         max-width: 900px;
         height: auto;
-        /* Greta: the logo reads suffocated jammed against the header row —
-           48px still wasn't enough once the swash's overshoot is accounted
-           for, doubled it. */
-        margin-top: 96px;
+        /* Greta: the logo reads suffocated jammed against the header row.
+           Responsive — 96px is right at desktop width but is disproportionate
+           on a phone, where it was also silently not applying at all. */
+        margin-top: clamp(40px, 14vw, 96px);
       }
       /* :global — the class lands on a child component's own scoped markup,
          so an un-prefixed selector here would never match it. */
@@ -133,6 +151,10 @@ const { title } = Astro.props;
         z-index: 30;
         overflow-y: auto;
         padding: var(--edge);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(16px);
       }
       .info-content {
         max-width: 900px;
@@ -158,29 +180,77 @@ const { title } = Astro.props;
       }
     </style>
 
-    <script is:inline>
-      const root = document.documentElement;
-      const themeBtn = document.getElementById("theme-toggle");
-      themeBtn?.addEventListener("click", () => {
-        const current =
-          root.getAttribute("data-theme") ||
-          (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-        const next = current === "dark" ? "light" : "dark";
-        root.setAttribute("data-theme", next);
-        localStorage.setItem("theme", next);
-      });
+    <script>
+      import { gsap } from "gsap";
+      import { revealNow, initScrollReveals } from "../scripts/reveal";
+      import { initCursor } from "../scripts/cursor";
 
-      const infoToggle = document.getElementById("info-toggle");
-      const infoClose = document.getElementById("info-close");
-      const infoPanel = document.getElementById("info-panel");
-      infoToggle?.addEventListener("click", () => {
-        infoPanel?.removeAttribute("hidden");
-        infoToggle.setAttribute("aria-expanded", "true");
-      });
-      infoClose?.addEventListener("click", () => {
-        infoPanel?.setAttribute("hidden", "");
-        infoToggle?.setAttribute("aria-expanded", "false");
-      });
+      function initThemeToggle() {
+        const themeBtn = document.getElementById("theme-toggle");
+        if (!themeBtn || themeBtn.dataset.bound) return;
+        themeBtn.dataset.bound = "true";
+
+        themeBtn.addEventListener("click", () => {
+          const root = document.documentElement;
+          const current =
+            root.getAttribute("data-theme") ||
+            (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          const next = current === "dark" ? "light" : "dark";
+          root.setAttribute("data-theme", next);
+          localStorage.setItem("theme", next);
+        });
+      }
+
+      function initInfoPanel() {
+        const infoToggle = document.getElementById("info-toggle");
+        const infoClose = document.getElementById("info-close");
+        const infoPanel = document.getElementById("info-panel");
+        if (!infoToggle || !infoPanel || infoToggle.dataset.bound) return;
+        infoToggle.dataset.bound = "true";
+
+        function open() {
+          infoPanel!.style.visibility = "visible";
+          infoPanel!.style.pointerEvents = "auto";
+          gsap.to(infoPanel, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" });
+          infoToggle!.setAttribute("aria-expanded", "true");
+          // Replays every time it opens rather than just the first — the
+          // panel should feel alive each visit, not just once ever.
+          revealNow(infoPanel!);
+        }
+        function close() {
+          gsap.to(infoPanel, {
+            opacity: 0,
+            y: 16,
+            duration: 0.35,
+            ease: "power2.in",
+            onComplete: () => {
+              infoPanel!.style.visibility = "hidden";
+              infoPanel!.style.pointerEvents = "none";
+            },
+          });
+          infoToggle!.setAttribute("aria-expanded", "false");
+        }
+
+        infoToggle.addEventListener("click", open);
+        infoClose?.addEventListener("click", close);
+      }
+
+      function initPage() {
+        initThemeToggle();
+        initInfoPanel();
+        initCursor();
+        // Only elements outside the info panel reveal on load/navigation —
+        // the panel's own [data-reveal] paragraphs replay on open instead
+        // (see initInfoPanel), not now, while it's still hidden.
+        document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => {
+          if (el.closest("#info-panel")) return;
+          revealNow(el);
+        });
+        initScrollReveals(document);
+      }
+
+      initPage();
+      document.addEventListener("astro:page-load", initPage);
     </script>
   </body>
 </html>

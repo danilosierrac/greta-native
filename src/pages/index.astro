@@ -1,10 +1,11 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Carousel from "../components/Carousel.astro";
+import { pageReveal } from "../scripts/page-transition";
 ---
 
 <Layout title="Greta Ferreira — Senior Project & Account Manager, Berlin">
-  <main>
+  <main transition:animate={pageReveal}>
     <Carousel />
   </main>
 </Layout>

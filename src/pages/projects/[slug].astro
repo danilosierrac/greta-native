@@ -1,6 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import projects from "../../content/projects.json";
+import { pageReveal } from "../../scripts/page-transition";
 
 type Project = (typeof projects)[number];
 
@@ -20,27 +21,33 @@ const { project, prev, next } = Astro.props as { project: Project; prev: Project
 ---
 
 <Layout title={`${project.title} — Greta Ferreira`}>
-  <main class="project">
-    <h1 class="heading-serif project__title">{project.title}</h1>
-    <p class="project__desc">{project.description}</p>
+  <main class="project" transition:animate={pageReveal}>
+    <h1 class="heading-serif project__title" data-reveal>{project.title}</h1>
+    <p class="project__desc" data-reveal>{project.description}</p>
 
     <div class="project__media">
       {
-        project.media.map((item) =>
-          item.video ? (
-            <video src={item.video} poster={item.image ?? undefined} controls playsinline />
-          ) : item.image ? (
-            <img src={item.image} alt={item.alt ?? project.title} loading="lazy" />
-          ) : null
-        )
+        project.media.map((item) => (
+          <div class="project__media-item" data-parallax-wrap>
+            {item.video ? (
+              <video src={item.video} poster={item.image ?? undefined} controls playsinline data-parallax />
+            ) : item.image ? (
+              <img src={item.image} alt={item.alt ?? project.title} loading="lazy" data-parallax />
+            ) : null}
+          </div>
+        ))
       }
     </div>
 
     {
       project.credits && (
-        <details class="credits">
-          <summary class="nav-label">Credits</summary>
-          <div class="credits__body" set:html={project.credits} />
+        <details class="credits" data-credits>
+          <summary class="nav-label" data-credits-summary>
+            <span class="credits__arrow" data-credits-arrow>&#9656;</span> Credits
+          </summary>
+          <div class="credits__wrap" data-credits-wrap>
+            <div class="credits__body" set:html={project.credits} />
+          </div>
         </details>
       )
     }
@@ -58,6 +65,84 @@ const { project, prev, next } = Astro.props as { project: Project; prev: Project
     </nav>
   </main>
 </Layout>
+
+<script>
+  import { gsap } from "gsap";
+
+  function initCredits() {
+    document.querySelectorAll<HTMLDetailsElement>("[data-credits]").forEach((details) => {
+      if (details.dataset.creditsBound) return;
+      details.dataset.creditsBound = "true";
+
+      const summary = details.querySelector<HTMLElement>("[data-credits-summary]");
+      const wrap = details.querySelector<HTMLElement>("[data-credits-wrap]");
+      const arrow = details.querySelector<HTMLElement>("[data-credits-arrow]");
+      if (!summary || !wrap) return;
+
+      gsap.set(wrap, { height: 0, overflow: "hidden" });
+
+      summary.addEventListener("click", (event) => {
+        event.preventDefault();
+        const isOpen = details.hasAttribute("open");
+
+        if (!isOpen) {
+          details.setAttribute("open", "");
+          gsap.fromTo(wrap, { height: 0 }, { height: "auto", duration: 0.5, ease: "power2.out" });
+          gsap.to(arrow, { rotate: 90, duration: 0.3, ease: "power2.out" });
+        } else {
+          gsap.to(wrap, {
+            height: 0,
+            duration: 0.4,
+            ease: "power2.in",
+            onComplete: () => details.removeAttribute("open"),
+          });
+          gsap.to(arrow, { rotate: 0, duration: 0.3, ease: "power2.in" });
+        }
+      });
+    });
+  }
+
+  initCredits();
+  document.addEventListener("astro:page-load", initCredits);
+
+  // Subtle scroll-parallax: each image drifts slightly slower than the
+  // page scrolls, wrapped in an overflow-hidden container scaled up just
+  // enough (CSS) that the drift never exposes an edge. The scroll listener
+  // is global (window persists across navigations) and only ever attached
+  // once; it re-queries [data-parallax] on every tick instead of holding a
+  // reference, so a fresh project page's images are picked up automatically.
+  function updateParallax() {
+    document.querySelectorAll<HTMLElement>("[data-parallax]").forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      const center = rect.top + rect.height / 2 - window.innerHeight / 2;
+      // scale(1.14) matches the CSS headroom below — an inline transform
+      // replaces the whole property, so it has to be repeated here or the
+      // translate would overwrite the scale and expose the image's edge.
+      el.style.transform = `translateY(${center * -0.08}px) scale(1.14)`;
+    });
+  }
+
+  if (!(window as any).__parallaxBound) {
+    (window as any).__parallaxBound = true;
+    let ticking = false;
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          updateParallax();
+          ticking = false;
+        });
+      },
+      { passive: true }
+    );
+  }
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) updateParallax();
+  document.addEventListener("astro:page-load", updateParallax);
+</script>
 
 <style>
   .project {
@@ -83,16 +168,33 @@ const { project, prev, next } = Astro.props as { project: Project; prev: Project
     flex-direction: column;
     gap: 24px;
   }
+  .project__media-item {
+    overflow: hidden;
+  }
   .project__media img,
   .project__media video {
     width: 100%;
     display: block;
+    /* Headroom for the parallax translateY so it never exposes an edge. */
+    transform: scale(1.14);
+    will-change: transform;
   }
   .credits {
     margin-top: 64px;
   }
+  .credits__arrow {
+    display: inline-block;
+    transform-origin: 45% 50%;
+  }
+  .credits summary {
+    cursor: pointer;
+    list-style: none;
+  }
+  .credits summary::-webkit-details-marker {
+    display: none;
+  }
   .credits__body {
-    margin-top: 16px;
+    padding-top: 16px;
     color: var(--fg-muted);
     font-size: 0.95rem;
     /* Greta: less spacing between credit lines. */
@@ -105,14 +207,14 @@ const { project, prev, next } = Astro.props as { project: Project; prev: Project
     text-decoration: underline;
   }
 
-  /* Greta: next on the right, previous on the left, not everything centered —
-     single-line + ellipsis so long project names never wrap to two lines
-     (that's what forced the old Framer version into a centered/stacked layout). */
+  /* Greta: next on the right, previous on the left, not everything centered.
+     Long titles wrap to two lines (that's fine — it's what forced the old
+     Framer layout centered/stacked) instead of being truncated illegibly. */
   .project-nav {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 24px;
+    gap: 16px;
     margin-top: 64px;
   }
   .project-nav__link {
@@ -131,12 +233,13 @@ const { project, prev, next } = Astro.props as { project: Project; prev: Project
     font-weight: 300;
     font-size: 1.1rem;
     color: var(--fg);
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
   }
   .back-home {
     flex-shrink: 0;
+    padding-top: 2px;
   }
 </style>
