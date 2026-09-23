@@ -21,21 +21,18 @@ const { project, prev, next } = Astro.props as { project: Project; prev: Project
 
 <Layout title={`${project.title} — Greta Ferreira`}>
   <main class="project">
-    <h1 class="heading-serif project__title" transition:name={`title-${project.slug}`}>{project.title}</h1>
+    <h1 class="heading-serif project__title">{project.title}</h1>
     <p class="project__desc">{project.description}</p>
 
     <div class="project__media">
       {
-        project.media.map((item, i) => {
-          // Only the first media item pairs with the grid card's cover image —
-          // one unambiguous name per slug, not a lookup that can miss or double up.
-          const name = i === 0 ? `cover-${project.slug}` : undefined;
-          return item.video ? (
-            <video src={item.video} poster={item.image ?? undefined} controls playsinline transition:name={name} />
+        project.media.map((item) =>
+          item.video ? (
+            <video src={item.video} poster={item.image ?? undefined} controls playsinline />
           ) : item.image ? (
-            <img src={item.image} alt={item.alt ?? project.title} loading="lazy" transition:name={name} />
-          ) : null;
-        })
+            <img src={item.image} alt={item.alt ?? project.title} loading="lazy" />
+          ) : null
+        )
       }
     </div>
 

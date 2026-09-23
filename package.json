@@ -13,9 +13,11 @@
   },
   "dependencies": {
     "astro": "^5.1.1",
-    "gsap": "^3.12.5"
+    "gsap": "^3.12.5",
+    "three": "^0.186.0"
   },
   "devDependencies": {
+    "@types/three": "^0.186.0",
     "typescript": "^5.7.2"
   }
 }
