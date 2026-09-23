@@ -83,6 +83,53 @@ const restOfMedia = project.media.filter((item) => item.image !== project.cover)
 
 <script>
   import { gsap } from "gsap";
+  import { navigate } from "astro:transitions/client";
+
+  // Prev/next keep the hero's own shared-element morph (both sides carry
+  // transition:name="project-cover", handled natively) but everything else
+  // — title, description, gallery, credits, nav — gets a quick deliberate
+  // fade first instead of riding the page-level blur/scale crossfade meant
+  // for a full page change. It's a card swap, not a new destination.
+  let navNavigating = false;
+
+  function initProjectNav() {
+    // This module is shared by every project page (same route template),
+    // so the flag needs resetting on each load the same way Carousel.astro
+    // and close-transition.ts do — otherwise one swap latches it forever.
+    navNavigating = false;
+
+    document.querySelectorAll<HTMLAnchorElement>(".project-nav__link").forEach((link) => {
+      if (link.dataset.navBound) return;
+      link.dataset.navBound = "true";
+
+      link.addEventListener("click", (event) => {
+        if (event.defaultPrevented || event.button !== 0) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        if (navNavigating) {
+          event.preventDefault();
+          return;
+        }
+        navNavigating = true;
+        event.preventDefault();
+
+        const href = link.getAttribute("href")!;
+        const content = document.querySelector<HTMLElement>(".project__content");
+        const go = () =>
+          navigate(href)?.catch?.(() => {
+            navNavigating = false;
+          });
+
+        if (content) {
+          gsap.to(content, { opacity: 0, duration: 0.2, ease: "power1.out", onComplete: go });
+        } else {
+          go();
+        }
+      });
+    });
+  }
+
+  initProjectNav();
+  document.addEventListener("astro:page-load", initProjectNav);
 
   function initCredits() {
     document.querySelectorAll<HTMLDetailsElement>("[data-credits]").forEach((details) => {

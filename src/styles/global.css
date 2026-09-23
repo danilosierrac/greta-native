@@ -126,6 +126,14 @@ a {
   border-radius: 999px;
   padding: 0.4em 0.9em;
   cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+/* Same hover language as .nav-label and the header's .icon-button — one
+   accent colour for every interactive control on the site, not a different
+   feedback style per component. */
+.theme-toggle:hover {
+  color: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 /* Line-reveal (src/scripts/reveal.ts): each rendered line clips inside the

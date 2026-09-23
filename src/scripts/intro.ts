@@ -1,12 +1,13 @@
 // Whether the site's one-time load intro (see Layout.astro's #intro-overlay)
 // should play: only on the very first page this browser session actually
 // loaded (captured once, eagerly, before any SPA navigation can change the
-// URL), only when that page was "/", and only once per session — so
+// URL), only when that page was home, and only once per session — so
 // closing back to the carousel from a project never re-triggers it.
+import { isHomePath } from "./paths";
+
 const INTRO_KEY = "greta-intro-played";
 
-const firstLoadWasHome =
-  typeof window !== "undefined" && (window.location.pathname === "/" || window.location.pathname === "");
+const firstLoadWasHome = typeof window !== "undefined" && isHomePath(window.location.pathname);
 
 export function shouldPlayIntro(): boolean {
   if (!firstLoadWasHome) return false;

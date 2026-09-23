@@ -24,13 +24,14 @@ const { title, isProject = false } = Astro.props;
         document.documentElement.setAttribute("data-theme", stored);
       }
 
-      // Mirrors src/scripts/intro.ts's shouldPlayIntro() — duplicated here
-      // (rather than imported) because this has to run synchronously before
-      // first paint. #intro-overlay defaults to display:none in CSS; this
-      // is the only thing that ever makes it visible, so every page that
-      // isn't a genuine first-ever load of "/" paints with zero flash of it.
+      // Mirrors src/scripts/intro.ts's shouldPlayIntro() (and its isHomePath
+      // check from src/scripts/paths.ts) — duplicated here rather than
+      // imported because this has to run synchronously before first paint.
+      // #intro-overlay defaults to display:none in CSS; this is the only
+      // thing that ever makes it visible, so every page that isn't a
+      // genuine first-ever load of the home route paints with zero flash.
       try {
-        const isHome = location.pathname === "/" || location.pathname === "";
+        const isHome = !/\/projects\//.test(location.pathname);
         const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
         if (isHome && !reduced && !sessionStorage.getItem("greta-intro-played")) {
           document.documentElement.setAttribute("data-intro", "pending");
@@ -50,25 +51,32 @@ const { title, isProject = false } = Astro.props;
       </div>
     </div>
 
-    <header class="site-header" transition:persist>
+    <!-- Not persisted: the close button's presence genuinely differs
+         between home and a project, and transition:persist would freeze
+         this whole block at whatever it looked like on first mount instead
+         of picking up that per-page difference. The tagline's own reveal
+         already replays on every navigation regardless (see initPage
+         below), so nothing here relied on persisting for its animation. -->
+    <header class="site-header">
       <div class="site-header__meta">
         <span class="nav-label" data-reveal>Senior Project Management &amp; Account Manager</span>
-        <button class="nav-label" id="info-toggle" type="button" aria-expanded="false">Info</button>
+        <div class="header-actions">
+          <button class="nav-label" id="info-toggle" type="button" aria-expanded="false">Info</button>
+          {
+            isProject && (
+              <button class="icon-button" data-home-link type="button" aria-label="Close">
+                <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+                  <path d="M5 5 L19 19 M19 5 L5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg>
+              </button>
+            )
+          }
+        </div>
       </div>
       <a href="/" aria-label="Greta Ferreira — home" data-home-link>
         <Wordmark class="site-logo" />
       </a>
     </header>
-
-    {
-      isProject && (
-        <button class="lightbox-close" data-home-link type="button" aria-label="Close" transition:persist>
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <path d="M5 5 L19 19 M19 5 L5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-          </svg>
-        </button>
-      )
-    }
 
     <slot />
 
@@ -156,30 +164,6 @@ const { title, isProject = false } = Astro.props;
         width: 100%;
         height: auto;
       }
-      /* The one clear way out of a lightbox — always the same spot,
-         regardless of scroll position, matching the reference Danilo sent. */
-      .lightbox-close {
-        position: fixed;
-        top: 24px;
-        right: 24px;
-        z-index: 40;
-        width: 44px;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        border: 1px solid var(--fg-faint);
-        background: var(--bg);
-        color: var(--fg);
-        cursor: pointer;
-        transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-      }
-      .lightbox-close:hover {
-        color: var(--accent-hover);
-        border-color: var(--accent-hover);
-        transform: scale(1.06);
-      }
       .site-header {
         padding: var(--edge);
         display: flex;
@@ -200,6 +184,37 @@ const { title, isProject = false } = Astro.props;
            overflowing past Info's column. */
         flex: 1;
         min-width: 0;
+      }
+      /* Info and (on a project) Close live in the same row, spaced by a
+         normal flex gap — they used to be able to overlap when Close was
+         its own independently fixed-position element instead of sharing
+         this layout with Info. */
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-shrink: 0;
+      }
+      /* Shared shape language with Close so the header's utility controls
+         read as one family — Info stays text (established, clear on its
+         own) but matches Close's size, border and hover colour. */
+      .icon-button {
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 1px solid var(--fg-faint);
+        background: transparent;
+        color: var(--fg);
+        cursor: pointer;
+        transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+      }
+      .icon-button:hover {
+        color: var(--accent-hover);
+        border-color: var(--accent-hover);
+        transform: scale(1.08);
       }
       /* :global — the class lands on a child component's own scoped markup
          (the <svg> is rendered inside Wordmark.astro, not here), so an

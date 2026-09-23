@@ -5,6 +5,7 @@
 // matching "open" on the way back in.
 import { gsap } from "gsap";
 import { navigate } from "astro:transitions/client";
+import { getHomeHref } from "./paths";
 
 // Guards against firing the close animation (and navigate()) twice from a
 // rapid double-click or a click on both the logo and "Back home" before the
@@ -40,7 +41,7 @@ export function initCloseLinks() {
         // to actually leave rather than silently doing nothing.
         event.preventDefault();
         navigating = true;
-        navigate("/")?.catch?.(() => {
+        navigate(getHomeHref())?.catch?.(() => {
           navigating = false;
         });
         return;
@@ -61,14 +62,18 @@ export function initCloseLinks() {
       (hero.style as any).viewTransitionName = "none";
 
       gsap.to(main, { opacity: 0, duration: 0.25, ease: "power1.out" });
+      // Aimed down into roughly where the carousel deck sits, not just
+      // "away" — a directional hint of returning to it, short of the full
+      // pixel-exact landing (which would need the WebGL carousel's own
+      // per-tile rects, only known on the page this hasn't navigated to yet).
       gsap.to(ghost, {
-        scale: 0.5,
-        y: 60,
+        scale: 0.12,
+        y: window.innerHeight * 0.32,
         opacity: 0,
-        duration: 0.4,
+        duration: 0.45,
         ease: "power2.in",
         onComplete: () => {
-          navigate("/")?.catch?.(() => {
+          navigate(getHomeHref())?.catch?.(() => {
             navigating = false;
           });
         },
