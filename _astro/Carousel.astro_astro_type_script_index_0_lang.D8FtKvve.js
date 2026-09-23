@@ -1,4 +1,4 @@
-import{g as po}from"./index.CzGW6FVa.js";import{n as jo}from"./router.2W7FzLmj.js";import{w as el}from"./intro.B2pkH0-3.js";/**
+import{g as po}from"./index.CzGW6FVa.js";import{n as jo}from"./router.2W7FzLmj.js";import{w as el}from"./intro.WwfC8JEC.js";/**
  * @license
  * Copyright 2010-2026 Three.js Authors
  * SPDX-License-Identifier: MIT
