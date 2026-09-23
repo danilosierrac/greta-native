@@ -11,7 +11,15 @@ const items = (projects as Project[])
   .filter((p): p is { src: string; title: string; slug: string } => Boolean(p.src));
 ---
 
-<div class="carousel" data-carousel>
+<!-- transition:persist has to live on this root element itself, inside this
+     component's own template — passing it at the <Carousel transition:persist />
+     usage site (Layout.astro) is silently a no-op in Astro; only a directive
+     written on the component's own outermost element actually persists it.
+     It also needs this explicit name: Astro's auto-generated key is based on
+     position among transition-relevant elements, which shifts by one on a
+     project page (see the comment above intro-overlay in Layout.astro) — an
+     unnamed persist here would silently never match between page types. -->
+<div class="carousel" data-carousel transition:persist="carousel">
   <div class="carousel__host" data-host></div>
   <div class="carousel__caption" data-label></div>
   <div class="carousel__counter" data-counter></div>
@@ -26,6 +34,13 @@ const items = (projects as Project[])
   import { createCarousel, DEFAULT_SETTINGS } from "../scripts/carousel-engine";
   import { navigate } from "astro:transitions/client";
   import { waitForIntro } from "../scripts/intro";
+  import { isHomePath } from "../scripts/paths";
+
+  // Created once, ever, the first time the visitor actually reaches home —
+  // never destroyed on navigation away. The whole point of persisting this
+  // component (see Layout.astro) is that closing a project reveals this
+  // exact running instance again instead of rebuilding it from scratch.
+  let engine: ReturnType<typeof createCarousel> | null = null;
 
   // Shared view-transition name for whichever tile was actually tapped —
   // matched by the hero <img> on the project page (see [slug].astro). Only
@@ -96,15 +111,7 @@ const items = (projects as Project[])
   }
 
   function mount() {
-    // This script's module only ever loads once — astro:page-load re-runs
-    // mount() on every arrival back at "/", but a plain top-level `let`
-    // survives across those calls. Without resetting it here, one
-    // successful tap would latch `navigating` true forever and every tap
-    // after a second visit to the homepage would silently do nothing.
-    navigating = false;
-
     const root = document.querySelector<HTMLDivElement>("[data-carousel]");
-    root?.classList.remove("is-picking");
     const host = root?.querySelector<HTMLDivElement>("[data-host]");
     const labelEl = root?.querySelector<HTMLDivElement>("[data-label]");
     const counterEl = root?.querySelector<HTMLDivElement>("[data-counter]");
@@ -148,7 +155,7 @@ const items = (projects as Project[])
       }
     }
 
-    const engine = createCarousel(host, {
+    engine = createCarousel(host, {
       projects: items,
       settings: DEFAULT_SETTINGS,
       onActiveChange: (index) => {
@@ -204,25 +211,54 @@ const items = (projects as Project[])
     });
 
     updateCaption();
-
-    // Astro swaps the DOM on navigation; the engine's own resources (canvas,
-    // GL context, listeners) need tearing down explicitly or they leak.
-    document.addEventListener(
-      "astro:before-swap",
-      () => {
-        engine.destroy();
-      },
-      { once: true }
-    );
+    // Deliberately no astro:before-swap teardown: this component is
+    // transition:persist in Layout.astro now, so it is never actually
+    // removed from the DOM by navigation. Destroying the engine here would
+    // just tear down the one instance we're trying to keep alive.
   }
 
-  // astro:page-load fires on the very first load too, not just after a
-  // transition — calling mount() directly as well double-mounted the engine.
-  // Mounting is held behind the intro (a no-op wait on every load after the
-  // first) so the WebGL entry doesn't burn its animation underneath the
-  // opaque overlay before there's anything to see.
+  // This component's root is now transition:persist (see Layout.astro),
+  // present on every page, so "arriving home" and "leaving home" both just
+  // mean showing or hiding it, never re-rendering it. data-route drives the
+  // CSS (see the style block below) — kept current here on every
+  // navigation, matching the same attribute Layout.astro's pre-paint script
+  // sets once before first paint, so there's no flash either way.
+  function updateVisibility() {
+    const home = isHomePath(location.pathname);
+    document.documentElement.setAttribute("data-route", home ? "home" : "project");
+    if (home) {
+      // Same reset this used to do inside mount() on every arrival at "/" —
+      // now needed here instead, since mount() itself only ever runs once.
+      navigating = false;
+      document.querySelector("[data-carousel]")?.classList.remove("is-picking");
+    }
+    return home;
+  }
+
+  // astro:after-swap fires as soon as the new page's DOM is in place — far
+  // earlier than astro:page-load, which waits for the whole transition to
+  // finish. Hiding (or revealing) the carousel needs to happen at that
+  // first moment, not after: leaving it visible for even one more tick
+  // would show the empty/dimmed carousel sitting above the incoming
+  // project content before anything hides it.
+  document.addEventListener("astro:after-swap", updateVisibility);
+
+  // The WebGL engine itself is only ever created once per session, lazily,
+  // the first time it's actually needed — this can safely wait for the
+  // full page-load event since mounting isn't the time-sensitive part.
   document.addEventListener("astro:page-load", () => {
-    waitForIntro().then(mount);
+    if (!updateVisibility()) return;
+    if (!engine) {
+      // Held behind the intro (a no-op wait on every load after the very
+      // first) so the WebGL entry doesn't burn its animation underneath the
+      // opaque overlay before there's anything to see.
+      waitForIntro().then(mount);
+    } else {
+      // Already running — force a fresh frame immediately rather than
+      // waiting for the IntersectionObserver's own callback to notice this
+      // was just un-hidden.
+      engine.invalidate();
+    }
   });
 </script>
 
@@ -232,6 +268,14 @@ const items = (projects as Project[])
     width: 100%;
     height: clamp(360px, 56vw, 640px);
     overflow: hidden;
+  }
+  /* This component persists across every page now (see Layout.astro) —
+     "leaving home" just means hiding it, not destroying and rebuilding it,
+     which is what lets closing a project reveal the exact same instance.
+     data-route is set pre-paint (Layout.astro's <head> script) and kept
+     current on every SPA navigation after that (updatePresence() below). */
+  html[data-route="project"] .carousel {
+    display: none;
   }
   .carousel__host {
     position: absolute;

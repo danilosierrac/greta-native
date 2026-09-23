@@ -15,6 +15,10 @@ interface Props {
 const { href, label, class: className } = Astro.props;
 ---
 
+<!-- transition:persist has to live here, on this component's own root
+     element — passing it at the <OrbitButton transition:persist /> usage
+     site (Layout.astro) is silently a no-op in Astro. Harmless so far since
+     this button has no real state to lose, but worth being correct about. -->
 <a
   class:list={["mo-orbit", className]}
   href={href}
@@ -22,6 +26,7 @@ const { href, label, class: className } = Astro.props;
   rel={href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
   aria-label={label}
   data-active="false"
+  transition:persist="get-in-touch"
 >
   <span class="orb-face">
     <span class="orb-decoration orb-wake" aria-hidden="true"></span>

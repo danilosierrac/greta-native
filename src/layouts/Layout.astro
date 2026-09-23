@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import Wordmark from "../components/Wordmark.astro";
 import OrbitButton from "../components/OrbitButton.astro";
+import Carousel from "../components/Carousel.astro";
 import { ClientRouter } from "astro:transitions";
 
 interface Props {
@@ -24,14 +25,23 @@ const { title, isProject = false } = Astro.props;
         document.documentElement.setAttribute("data-theme", stored);
       }
 
-      // Mirrors src/scripts/intro.ts's shouldPlayIntro() (and its isHomePath
-      // check from src/scripts/paths.ts) — duplicated here rather than
-      // imported because this has to run synchronously before first paint.
-      // #intro-overlay defaults to display:none in CSS; this is the only
-      // thing that ever makes it visible, so every page that isn't a
-      // genuine first-ever load of the home route paints with zero flash.
+      // Mirrors src/scripts/paths.ts's isHomePath — duplicated here rather
+      // than imported because this has to run synchronously before first
+      // paint. The carousel is now transition:persist and rendered on every
+      // page (see Layout.astro), so a direct project-page load would
+      // otherwise show its empty container for a frame before Carousel.astro's
+      // own script has a chance to hide it; data-route is that hide, applied
+      // before anything paints. updatePresence() keeps it current on every
+      // SPA navigation after this.
+      const isHome = !/\/projects\//.test(location.pathname);
+      document.documentElement.setAttribute("data-route", isHome ? "home" : "project");
+
+      // Mirrors src/scripts/intro.ts's shouldPlayIntro() — the rest of this
+      // duplicated for the same before-first-paint reason. #intro-overlay
+      // defaults to display:none in CSS; this is the only thing that ever
+      // makes it visible, so every page that isn't a genuine first-ever load
+      // of the home route paints with zero flash.
       try {
-        const isHome = !/\/projects\//.test(location.pathname);
         const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
         if (isHome && !reduced && !sessionStorage.getItem("greta-intro-played")) {
           document.documentElement.setAttribute("data-intro", "pending");
@@ -40,12 +50,22 @@ const { title, isProject = false } = Astro.props;
     </script>
   </head>
   <body>
+    <!-- Every transition:persist below is given an explicit string name.
+         Astro's auto-generated key (bare transition:persist, no name) is
+         based on the element's position among transition-relevant nodes —
+         and the close button further down only exists on a project page,
+         which shifts that count by one for everything after it. Every
+         "persisted" element in this file was silently failing to match
+         between home and a project (each just crossfaded like normal
+         content) until they all got real names instead of relying on that
+         count staying identical across page types, which it never was. -->
+
     <!-- Plays once per session, only when "/" was the very first page this
          browser tab loaded (see src/scripts/intro.ts) — the same metallic
          wordmark that anchors the header first appears here, large and
          alone, like Jem's glass emblem materialising before anything else
          on the page is allowed to reveal itself. -->
-    <div id="intro-overlay" class="intro-overlay" aria-hidden="true" transition:persist>
+    <div id="intro-overlay" class="intro-overlay" aria-hidden="true" transition:persist="intro-overlay">
       <div class="intro-overlay__mark">
         <Wordmark class="intro-mark-svg" metallic="full" />
       </div>
@@ -73,27 +93,32 @@ const { title, isProject = false } = Astro.props;
           }
         </div>
       </div>
+      <!-- metallic="full" — matches the intro mark exactly (same prop),
+           so when it lands here and fades out there's no style change at
+           the handoff: it just stays the bezeled logo it already was. -->
       <a href="/" aria-label="Greta Ferreira — home" data-home-link>
-        <Wordmark class="site-logo" />
+        <Wordmark class="site-logo" metallic="full" />
       </a>
     </header>
 
+    <!-- Rendered on every route so it's the same DOM node, same running
+         WebGL engine, everywhere — a project page hides it rather than
+         destroying it, so closing reveals the exact carousel you left, not
+         a freshly rebuilt one. (transition:persist itself is set on
+         Carousel.astro's own root element, not here — see that file.) -->
+    <Carousel />
+
     <slot />
 
-    <OrbitButton
-      class="get-in-touch"
-      href="mailto:info@gretaferreira.com"
-      label="Get in touch"
-      transition:persist
-    />
+    <OrbitButton class="get-in-touch" href="mailto:info@gretaferreira.com" label="Get in touch" />
 
-    <button class="theme-toggle" id="theme-toggle" type="button" transition:persist>Toggle theme</button>
+    <button class="theme-toggle" id="theme-toggle" type="button" transition:persist="theme-toggle">Toggle theme</button>
 
     <!-- Site-wide, not page content — persists across transitions so it
          reads the same from every page instead of only existing on "/".
          Starts transparent/hidden and is animated open by script, not the
          hidden attribute (which can't be transitioned). -->
-    <div id="info-panel" class="info-panel" transition:persist>
+    <div id="info-panel" class="info-panel" transition:persist="info-panel">
       <button class="nav-label" id="info-close" type="button">Close</button>
       <div class="info-content">
         <p data-reveal>

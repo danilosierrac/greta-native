@@ -1,11 +1,13 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import Carousel from "../components/Carousel.astro";
 import { pageReveal } from "../scripts/page-transition";
 ---
 
+<!-- The carousel itself now lives in Layout.astro, transition:persist, so
+     it survives navigation instead of being torn down and rebuilt — see
+     Carousel.astro's updatePresence(). This page has nothing left to render
+     of its own; the empty, transitioned <main> just keeps this route's
+     "page" concept (and pageReveal) intact for the rest of the chrome. -->
 <Layout title="Greta Ferreira — Senior Project & Account Manager, Berlin">
-  <main transition:animate={pageReveal}>
-    <Carousel />
-  </main>
+  <main transition:animate={pageReveal}></main>
 </Layout>
