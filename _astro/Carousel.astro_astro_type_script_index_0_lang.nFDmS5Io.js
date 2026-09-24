@@ -1,4 +1,4 @@
-import{g as Zn,a as hl,i as pl}from"./paths.DS1QLWbU.js";import{p as Mr}from"./index.C29etx7b.js";import{w as ml}from"./intro.Ci3V6z6k.js";import{i as gl,a as _l}from"./project-gestures.B7TZSKQL.js";/**
+import{g as Zn,a as hl,i as pl}from"./paths.nbdOH6Hi.js";import{p as Mr}from"./index.C29etx7b.js";import{w as ml}from"./intro.Bp02xaPf.js";import{i as gl,a as _l}from"./project-gestures.BTb1J2Ii.js";/**
  * @license
  * Copyright 2010-2026 Three.js Authors
  * SPDX-License-Identifier: MIT
