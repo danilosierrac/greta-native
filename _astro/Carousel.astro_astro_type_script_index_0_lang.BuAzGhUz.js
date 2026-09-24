@@ -4378,11 +4378,17 @@ void main() {
         col += vec3(rimLine);
 
         outCoverage = smoothstep(1.0, 0.93, shapeND);
-        outAlpha = clamp(
-            sampledAlpha + nova + ring + aura + rimLine,
-            0.0,
-            1.0
-        );
+        // Alpha comes only from the actually-sampled tile texture — nova/
+        // ring/aura/rimLine stay color-only additions (already folded into
+        // col above). They used to inflate alpha too, which was harmless
+        // over a dark page background (the extra alpha just blended more
+        // black-ish page through) but on a light background — or in any
+        // gap wider than a tile, where sampledAlpha is genuinely 0 — that
+        // same glow-alpha painted a visible grey haze the full width of
+        // the lens's coverage (nearly the whole carousel), since coverage
+        // is ~1 across almost all of it. Tiles still glow exactly where
+        // they already are; empty gaps now stay actually transparent.
+        outAlpha = sampledAlpha;
 
         return col;
     }
