@@ -1,4 +1,4 @@
-import{g as el,i as tl}from"./paths.nbdOH6Hi.js";import{p as _r}from"./index.C29etx7b.js";import{w as nl}from"./intro.Bp02xaPf.js";import{i as il,r as rl,o as sl,s as al,c as ol}from"./project-overlay.D0-OmyqB.js";import"./project-gestures.BTb1J2Ii.js";/**
+import{g as el,i as tl}from"./paths.nbdOH6Hi.js";import{p as _r}from"./index.C29etx7b.js";import{w as nl}from"./intro.Bp02xaPf.js";import{i as il,r as rl,o as sl,s as al,c as ol}from"./project-overlay.6_gSNCJ6.js";import"./project-gestures.BTb1J2Ii.js";/**
  * @license
  * Copyright 2010-2026 Three.js Authors
  * SPDX-License-Identifier: MIT
